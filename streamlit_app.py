@@ -18,6 +18,9 @@ credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
 ])
 client = gspread.authorize(credentials)
 
+# Create Sheets API client for batch update requests
+sheets_api = build('sheets', 'v4', credentials=credentials)
+
 # App title
 st.title("📺 YouTube Lead Finder")
 
@@ -129,11 +132,9 @@ if st.button("🚀 Run Lead Search"):
             }]
         }
 
-        spreadsheet_id = sheet.id
-        client.request(
-            method="post",
-            uri=f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate",
-            json=checkbox_request
-        )
+        sheets_api.spreadsheets().batchUpdate(
+            spreadsheetId=sheet.id,
+            body=checkbox_request
+        ).execute()
 
         st.success("📤 Sheet updated with checkboxes and sent successfully!")
