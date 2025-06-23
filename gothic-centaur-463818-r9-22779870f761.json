@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gothic-centaur-463818-r9",
+  "private_key_id": "22779870f761b5ac471d1e159e4e6cda910678f3",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDLTGeT37w9S8Jn\nR97bNBTP/47ZUxT0cAMuxCjPbTWMQ64JFoiGaS8pIJYtJ4l+fXJWwV2SwS3F6Nfh\nHllJWU4QqLj9IVcL2G3wJxms2+e9PoZrYP8xIL4OnSyrj870Ns79r9fPChXsLwUk\nTciEkoZ/yOpueDCvRhZJEEevS73GzSsJMOh2cCVeUESXh22ny1658xDzEHemebUV\nAcoNpULQ5IqoM1k0v3AcBMAG01q/ctyE8xLMlhcSnmfgKXMt1pUSgJZCdEkvESIP\nyVZjNsJkERS/I9wn46WEZVk2NnbMZor+OGByrA+iUGVR/51bFGBEPt4vonnbCyQH\nm5hkD9bhAgMBAAECggEAFUNQAATiFM0kL5YyRl37oUea4rsQUYKXqqAEnrFO7PU1\nMikjrV85+gS5AE8Gz+6B83X0+gDvbygr0BVTBFttUUu8UWlXx9rioMAOLOixI7dy\n6q8x8ar5heDFh8oaPKuw2ZK3MSXeZh4C3Smvg8IphBr4/gXfHa3obcrgnIKA/lZO\nNfxUH5Dx/bEcSY12Ve5g29TJCCV8v2h6cI1eQZ64MVPBgCAFNjkYj659OhZtxI5Q\nHqeTbfjM94RrcwFtP5K3fXkLQE8tM/MHj5biCSzwLBxe9+TLrcahrb4Gm1Kw4aVL\nFOYwrQ8huAYMXWfL4aqrj1p87/jDlV9jLpBnO0+/QwKBgQD5PD9zISJaaVchN7zy\nKXuQbT088io9DBgEOt6Hgfco4xaflKzzZ/A624Bt6Y9F+MoBlG0LhSlbpsroo2kv\nUvnrTauH4OQitj6NpnQp2yAMUWeAFa/QlimGrUM7/AYVZA+BGMmcnHP+oJVvCq1i\nEAwGkBOY5Wll/n5KOnwSP1/QawKBgQDQ0PmrtycBSvGhzw8mfnQA73KWsyQBiiVE\nlHQ8qe7B17JJkgol2gTdt53tETJiPFuh2tE0zdlqkfZhjHSp7SBVurp5kxbAQ+Rk\n61xlZC4KYjFa/LXP1DHD/ymSGA+LUV1XiPMVzkVoac73RSFevMq320UyouECc89A\nxVB1B7AY4wKBgQDayPKB5CI9757WwBETGysm+134dDRz5nvmqq7RkVsf/0jKyT6R\nZTpS0IEK+y4UJHNfs6WNqVVG6UHRujEJo/NThZj/7IEXn5eFzQrH+11EsukCXQc7\nObY2TT5qF7BXcsDReKry2bxRVzIWie7t2FxWHn+1hh1htWezTWfAtPUtBQKBgHPI\nC0eM7BGpbkUbu/jKEKQcIFsyxPodkQBvl+uzBXFxmad1VC8craoKD4TNDjSt5tjd\nrTYsFSsj94qrCFzX4B/ow1B5oBnHCzJx1e9aFrUnMNqUWHL94wIbzv70XFoRKUJJ\n6w7iKlX0pQ8xw4j2ASjkaX/kFAL6F6aAQVZChv+lAoGBAKT/gcN5QiPbU7m5IheR\nnT5jqF4qR0Xqfe4AugpD8Ox238VIu9pWUWbR+ma9LAJGxQY+GoqDK+Fytpua65Up\naB1uwkbRzmE9D6wqBedzwpnGYEshmYVLv/FiJaCtb1vy4PEBjfrMhmdOnP69jDdl\n+daK5aieDJ6H0/C1evLPULM4\n-----END PRIVATE KEY-----\n",
+  "client_email": "sheet-connector@gothic-centaur-463818-r9.iam.gserviceaccount.com",
+  "client_id": "107283971392021159810",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sheet-connector%40gothic-centaur-463818-r9.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
