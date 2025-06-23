@@ -6,6 +6,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
+from langdetect import detect, DetectorFactory
+DetectorFactory.seed = 0  # for consistent language detection results
 
 # Load API key from secrets
 API_KEY = st.secrets["API_KEY"]
@@ -18,43 +20,63 @@ credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
 ])
 client = gspread.authorize(credentials)
 
-# Create Sheets API client for batch update requests
-sheets_api = build('sheets', 'v4', credentials=credentials)
-
 # App title
 st.title("📺 YouTube Lead Finder")
 
 # Sidebar filters
-query = st.text_input("🔍 Keywords (e.g. make money, coaching)", value="make money online, side hustle")
+query = st.text_input("🔍 Keywords (comma separated, e.g. make money, coaching)", value="make money online, side hustle")
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=70000)
 active_days = st.number_input("📅 Only Channels Active in Last __ Days", value=30)
+
+# New Filters
+creation_date_from = st.date_input("📆 Channel Created After", value=datetime.date(2018,1,1))
+creation_date_to = st.date_input("📆 Channel Created Before", value=datetime.date.today())
+
+languages = st.multiselect("🌐 Channel Language(s) (detected)", options=['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh-cn', 'ja'], default=['en'])
+
+niches = st.multiselect("📚 Niche(s)", options=[k.strip() for k in query.split(",")], default=[k.strip() for k in query.split(",")])
+
+monetization_filter = st.checkbox("💰 Only Channels Likely Monetized (mentions sponsor, merch, patreon, etc.)")
+
 sheet_name = st.text_input("📄 Google Sheet Name", value="YT Leads")
+
+# Helper functions
+def extract_instagram(text):
+    match = re.search(r"(https?://)?(www\.)?instagram\.com/([a-zA-Z0-9_.]+)", text)
+    return f"https://instagram.com/{match.group(3)}" if match else "None"
+
+def extract_emails(text):
+    return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text))
+
+def get_upload_date(channel_id, youtube):
+    uploads_playlist = youtube.channels().list(
+        part="contentDetails", id=channel_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    videos = youtube.playlistItems().list(
+        part="contentDetails", playlistId=uploads_playlist, maxResults=1).execute()
+    if not videos["items"]:
+        return None
+    date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
+    return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+
+def detect_language(text):
+    try:
+        return detect(text)
+    except:
+        return "unknown"
+
+def check_monetization(desc):
+    keywords = ["sponsor", "merch", "patreon", "donate", "membership", "affiliate"]
+    desc_lower = desc.lower()
+    return any(k in desc_lower for k in keywords)
 
 # Button
 if st.button("🚀 Run Lead Search"):
     st.info("Scraping YouTube... Please wait...")
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
-    keywords = [k.strip() for k in query.split(",")]
+    keywords = niches  # use niche filter keywords
     all_data = []
-
-    def extract_instagram(text):
-        match = re.search(r"(https?://)?(www\.)?instagram\.com/([a-zA-Z0-9_.]+)", text)
-        return f"https://instagram.com/{match.group(3)}" if match else "None"
-
-    def extract_emails(text):
-        return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", text))
-
-    def get_upload_date(channel_id):
-        uploads_playlist = youtube.channels().list(
-            part="contentDetails", id=channel_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-        videos = youtube.playlistItems().list(
-            part="contentDetails", playlistId=uploads_playlist, maxResults=1).execute()
-        if not videos["items"]:
-            return None
-        date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
-        return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
     for keyword in keywords:
         search_response = youtube.search().list(
@@ -76,11 +98,26 @@ if st.button("🚀 Run Lead Search"):
             if not (min_subs <= subs <= max_subs):
                 continue
 
-            last_upload = get_upload_date(item["id"])
+            # Channel creation date filter
+            created_at = datetime.datetime.fromisoformat(item['snippet']['publishedAt'][:-1]).date()
+            if not (creation_date_from <= created_at <= creation_date_to):
+                continue
+
+            last_upload = get_upload_date(item["id"], youtube)
             if not last_upload or (datetime.datetime.now(datetime.timezone.utc) - last_upload).days > active_days:
                 continue
 
             desc = item['snippet']['description']
+
+            # Language detection filter
+            lang = detect_language(item['snippet']['title'] + " " + desc)
+            if lang not in languages:
+                continue
+
+            # Monetization filter
+            if monetization_filter and not check_monetization(desc):
+                continue
+
             insta = extract_instagram(desc)
             emails = extract_emails(desc)
 
@@ -90,6 +127,8 @@ if st.button("🚀 Run Lead Search"):
                 "Subscribers": subs,
                 "Total Videos": item["statistics"].get("videoCount"),
                 "Last Upload": last_upload.date(),
+                "Channel Created": created_at,
+                "Language": lang,
                 "Instagram": insta,
                 "Email": emails,
                 "Status": ""
@@ -109,32 +148,4 @@ if st.button("🚀 Run Lead Search"):
         ws.clear()
         set_with_dataframe(ws, df)
 
-        # Format "Status" column as checkboxes
-        checkbox_request = {
-            "requests": [{
-                "repeatCell": {
-                    "range": {
-                        "sheetId": ws._properties['sheetId'],
-                        "startRowIndex": 1,
-                        "endRowIndex": len(df) + 1,
-                        "startColumnIndex": df.columns.get_loc("Status"),
-                        "endColumnIndex": df.columns.get_loc("Status") + 1
-                    },
-                    "cell": {
-                        "dataValidation": {
-                            "condition": {"type": "BOOLEAN"},
-                            "strict": True,
-                            "showCustomUi": True
-                        }
-                    },
-                    "fields": "dataValidation"
-                }
-            }]
-        }
-
-        sheets_api.spreadsheets().batchUpdate(
-            spreadsheetId=sheet.id,
-            body=checkbox_request
-        ).execute()
-
-        st.success("📤 Sheet updated with checkboxes and sent successfully!")
+        st.success("📤 Sent to Google Sheet successfully!")
