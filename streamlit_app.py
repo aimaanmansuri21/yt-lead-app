@@ -26,7 +26,7 @@ client = gspread.authorize(credentials)
 query = st.text_input("🔍 Keywords (max 5, comma separated)", value="")
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
-active_years = st.number_input("📆 Only Channels Active in Last __ Years", value=2)
+active_years = st.number_input("📆 Filter channels by recent activity (in years)", value=1)
 
 # Button
 if st.button("🚀 Run Lead Search"):
