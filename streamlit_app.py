@@ -65,23 +65,20 @@ if "keyword_input" not in st.session_state:
 
 container = st.container()
 with container:
-    st.markdown("<div style='display: flex; justify-content: space-between; align-items: center;'>", unsafe_allow_html=True)
-    st.markdown("""
-        <div style='width: 80%;'>
-            <label style='font-weight: 600; font-size: 1.2rem;'>Enter up to 5 keywords (comma-separated)</label>
-            <textarea style='width: 100%; height: 100px; border-radius: 8px; padding: 1em; font-size: 1.1rem; line-height: 1.6; border: 1px solid #ccc;'>
-            </textarea>
-        </div>
-    """, unsafe_allow_html=True)
-    st.markdown("""
-        <div style='margin-left: 20px;'>
-    """, unsafe_allow_html=True)
-    if st.button("🎲 Randomize", key="randomize_btn"):
-        random_niche = random.choice(list(niche_keywords.keys()))
-        selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
-        st.session_state["keyword_input"] = ", ".join(selected_keywords)
-        st.rerun()
-    st.markdown("</div>" * 2, unsafe_allow_html=True)
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.session_state["keyword_input"] = st.text_area(
+            "Enter up to 5 keywords (comma-separated)",
+            value=st.session_state["keyword_input"],
+            key="keyword_input_textbox",
+            height=100
+        )
+    with col2:
+        if st.button("🎲 Randomize", key="randomize_btn"):
+            random_niche = random.choice(list(niche_keywords.keys()))
+            selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
+            st.session_state["keyword_input"] = ", ".join(selected_keywords)
+            st.rerun()
 
 query_value = st.session_state["keyword_input"]
 
