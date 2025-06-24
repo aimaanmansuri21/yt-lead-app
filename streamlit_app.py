@@ -27,7 +27,7 @@ st.title("📺 YouTube Lead Generator")
 query = st.text_input("🔍 Keywords (comma separated, max 5)", value="", max_chars=200)
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
-active_years = st.number_input("📅 Only Channels Active in Last _ Years", value=2)
+active_years = st.number_input("📅 Only Channels Active in Last Years", value=2)
 
 # Button
 if st.button("🚀 Run Lead Search"):
@@ -148,4 +148,5 @@ if st.button("🚀 Run Lead Search"):
                 json=checkbox_request
             )
 
-            st.success("📤 Sheet updated with checkboxes and sent successfully!")
+            sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
+            st.markdown(f"[📄 Open Google Sheet with Results]({sheet_url})", unsafe_allow_html=True)
