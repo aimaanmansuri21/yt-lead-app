@@ -6,9 +6,10 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
+from langdetect import detect
 
-# App title
-st.title("📈 YouTube Lead Generator")
+# Title
+st.title("📺 YouTube Lead Generator")
 
 # Load API key from secrets
 API_KEY = st.secrets["API_KEY"]
@@ -22,20 +23,23 @@ credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
 client = gspread.authorize(credentials)
 
 # Sidebar filters
-query = st.text_input("🔍 Enter up to 5 keywords", value="")
+query = st.text_input("🔍 Keywords (max 5, comma separated)", value="")
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
-active_years = st.number_input("📆 Only Channels Active in Last X Years", min_value=0, value=2)
+active_years = st.number_input("📆 Only Channels Active in Last __ Years", value=2)
 
 # Button
 if st.button("🚀 Run Lead Search"):
-    keywords = [k.strip() for k in query.split(",") if k.strip()]
-
-    if not (1 <= len(keywords) <= 5):
-        st.error("❌ Please enter between 1 and 5 keywords.")
+    if not query.strip():
+        st.warning("Please enter at least one keyword.")
         st.stop()
 
-    st.info("🔍 Scraping YouTube... Please wait...")
+    keywords = [k.strip() for k in query.split(",") if k.strip()]
+    if len(keywords) > 5:
+        st.warning("Please enter no more than 5 keywords.")
+        st.stop()
+
+    st.info("Scraping YouTube... Please wait...")
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
     all_data = []
@@ -66,8 +70,6 @@ if st.button("🚀 Run Lead Search"):
         ).execute()
 
         channel_ids = [item['snippet']['channelId'] for item in search_response['items']]
-        if not channel_ids:
-            continue
 
         details = youtube.channels().list(
             part="snippet,statistics",
@@ -80,10 +82,18 @@ if st.button("🚀 Run Lead Search"):
                 continue
 
             last_upload = get_upload_date(item["id"])
-            if not last_upload or (datetime.datetime.now(datetime.timezone.utc) - last_upload).days > (active_years * 365):
+            if not last_upload or (datetime.datetime.now(datetime.timezone.utc) - last_upload).days > active_years * 365:
                 continue
 
             desc = item['snippet']['description']
+
+            # Filter by language
+            try:
+                if detect(desc) != "en":
+                    continue
+            except:
+                continue
+
             insta = extract_instagram(desc)
             emails = extract_emails(desc)
 
@@ -106,10 +116,40 @@ if st.button("🚀 Run Lead Search"):
         st.success(f"✅ Found {len(df)} leads")
         st.dataframe(df)
 
-        # Write to Google Sheet (always named YT Leads)
+        # Save to Google Sheet
         sheet = client.open("YT Leads")
         ws = sheet.sheet1
         ws.clear()
         set_with_dataframe(ws, df)
 
-        st.success("📤 Leads sent to Google Sheet!")
+        # Format "Status" column as checkboxes
+        checkbox_request = {
+            "requests": [{
+                "repeatCell": {
+                    "range": {
+                        "sheetId": ws._properties['sheetId'],
+                        "startRowIndex": 1,
+                        "endRowIndex": len(df) + 1,
+                        "startColumnIndex": df.columns.get_loc("Status"),
+                        "endColumnIndex": df.columns.get_loc("Status") + 1
+                    },
+                    "cell": {
+                        "dataValidation": {
+                            "condition": {"type": "BOOLEAN"},
+                            "strict": True,
+                            "showCustomUi": True
+                        }
+                    },
+                    "fields": "dataValidation"
+                }
+            }]
+        }
+
+        spreadsheet_id = sheet.id
+        client.request(
+            method="post",
+            uri=f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate",
+            json=checkbox_request
+        )
+
+        st.success("📤 Sheet updated with checkboxes and sent successfully!")
