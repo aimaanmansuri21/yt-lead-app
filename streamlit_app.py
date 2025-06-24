@@ -85,16 +85,7 @@ with container:
 
 query_value = st.session_state["keyword_input"]
 
-with col2:
-    st.markdown("""
-        <div style='display: flex; justify-content: center; align-items: center; height: 100%; padding-top: 5px;'>
-    """, unsafe_allow_html=True)
-    if st.button("🎲 Randomize", key="randomize_btn"):
-        random_niche = random.choice(list(niche_keywords.keys()))
-        selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
-        st.session_state["keyword_input"] = ", ".join(selected_keywords)
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Filters ---
 st.markdown("### Filters")
