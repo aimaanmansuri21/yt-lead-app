@@ -76,6 +76,23 @@ with col5:
 # --- Run Button ---
 run_button = st.button("Search YouTube for Leads")
 
+# --- YouTube API Service with Key Rotation ---
+def get_youtube_service():
+    for key in st.secrets["API_KEYS"]:
+        try:
+            yt = build("youtube", "v3", developerKey=key)
+            yt.search().list(q="test", part="snippet", maxResults=1).execute()
+            return yt
+        except Exception as e:
+            if "quotaExceeded" in str(e):
+                continue
+            else:
+                st.error(f"Unexpected YouTube API error: {e}")
+                break
+    st.error("❌ All API keys have exceeded their quota. Try again tomorrow.")
+    return None
+
+# --- Run Logic ---
 if run_button:
     query = st.session_state["keyword_input"]
     if not query.strip():
@@ -83,7 +100,10 @@ if run_button:
     else:
         st.info("Scraping YouTube... Please wait...")
 
-        youtube = build("youtube", "v3", developerKey=st.secrets["API_KEY"])
+        youtube = get_youtube_service()
+        if youtube is None:
+            st.stop()
+
         gspread_secrets = st.secrets["gspread"]
         credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
             "https://www.googleapis.com/auth/spreadsheets",
@@ -126,10 +146,18 @@ if run_button:
                 channel_ids = [item['snippet']['channelId'] for item in search_response['items'] if 'channelId' in item['snippet']]
                 if not channel_ids:
                     continue
-                details = youtube.channels().list(
-                    part="snippet,statistics",
-                    id=",".join(channel_ids)
-                ).execute()
+                try:
+                    details = youtube.channels().list(
+                        part="snippet,statistics",
+                        id=",".join(channel_ids)
+                    ).execute()
+                except Exception as e:
+                    if "quotaExceeded" in str(e):
+                        st.error("⚠️ You've hit your YouTube API quota. Try again tomorrow or use a new API key.")
+                        break
+                    else:
+                        st.error(f"YouTube API error: {e}")
+                        continue
             except Exception as e:
                 st.error(f"YouTube API error: {e}")
                 continue
