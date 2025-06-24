@@ -242,7 +242,8 @@ niche_keywords = {
         "Greek mythology explained", "Norse mythology stories", "Hindu mythology legends", "Egyptian gods explained", "Mythology for beginners", "Mythical creatures breakdown", "Top 10 mythological gods", "Stories of Krishna", "Zeus and the titans", "Gods of war 	mythology",
         "Underworld myths", "Origin of creation myths", "Mythology storytime", "Mythical weapons explained", "Rama and Ravana", "Mythology battles", "Thor and Loki explained", "Love stories in mythology", "Famous epics simplified", "What is Mahabharata",
         "Stories from Ramayana", "Japanese mythology basics", "Demigods explained", "Greek heroes list", "Vishnu avatars explained", "Mythology and astrology", "Folklore vs mythology", "Legendary monsters", "Mythology shorts", "Epic battles retold",
-        "Gods of death across cultures", "Ancient myths decoded", "Indian mythological facts", "Roman gods explained", "Myth vs history", "Mythological stories with morals", "Sanskrit epics in English", "Mythology in pop culture", "Cosmic mythology", "Mythical family 	trees","Famous curses in mythology", "Gods across different cultures", "Best myth stories", "Hero’s journey in mythology", "Symbolism in myths", "Shiva stories simplified", "Mythical birth stories", "End of world myths", "Dragons in mythology", "Devas vs Asuras"
+        "Gods of death across cultures", "Ancient myths decoded", "Indian mythological facts", "Roman gods explained", "Myth vs history", "Mythological stories with morals", "Sanskrit epics in English", "Mythology in pop culture", "Cosmic mythology", "Mythical family 	trees",
+        "Famous curses in mythology", "Gods across different cultures", "Best myth stories", "Hero’s journey in mythology", "Symbolism in myths", "Shiva stories simplified", "Mythical birth stories", "End of world myths", "Dragons in mythology", "Devas vs Asuras"
     ]
 
 })
