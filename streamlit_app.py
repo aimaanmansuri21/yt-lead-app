@@ -62,7 +62,7 @@ if st.button("🚀 Run Lead Search"):
                 q=keyword,
                 type="channel",
                 part="snippet",
-                maxResults=30
+                maxResults=50
             ).execute()
 
             channel_ids = [item['snippet']['channelId'] for item in search_response['items']]
@@ -149,4 +149,4 @@ if st.button("🚀 Run Lead Search"):
             )
 
             sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
-            st.markdown(f"[📄 Open Google Sheet with Results]({sheet_url})", unsafe_allow_html=True)
+            st.markdown(f"[📄 View Sheet in Google Sheets]({sheet_url})", unsafe_allow_html=True)
