@@ -70,7 +70,7 @@ with col1:
 
 with col2:
     st.markdown("""
-        <div style='display: flex; justify-content: flex-start; align-items: flex-start; height: 100%; padding-top: 12px;'>
+        <div style='display: flex; justify-content: flex-start; align-items: center; height: 100%; padding-top: 5px;'>
     """, unsafe_allow_html=True)
     if st.button("🎲 Randomize", key="randomize_btn"):
         random_niche = random.choice(list(niche_keywords.keys()))
