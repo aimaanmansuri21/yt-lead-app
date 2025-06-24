@@ -36,7 +36,7 @@ def generate_random_keywords():
 # --- Keyword Input + Randomize ---
 col1, col2 = st.columns([4, 1])
 with col1:
-    query = st.text_input("🎯 Keywords (max 5)", value=st.session_state.random_keywords)
+    query = st.text_area("🎯 Keywords (max 5)", value=st.session_state.random_keywords, height=100)
 with col2:
     if st.button("🎲 Randomize"):
         generate_random_keywords()
