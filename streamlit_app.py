@@ -9,28 +9,32 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# --- Custom CSS for Apple-like UI ---
+# --- Custom CSS for Clean Light UI ---
 st.markdown("""
     <style>
         html, body, [class*="css"]  {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: #ffffff;
+            color: #000000;
         }
         .stButton>button {
-            background-color: #f5f5f7;
-            border: none;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
             color: #000;
-            padding: 0.75em 1.5em;
-            border-radius: 10px;
+            padding: 0.6em 1.2em;
+            border-radius: 12px;
             font-weight: 500;
-            transition: background-color 0.3s;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            background-color: #e5e5e7;
+            background-color: #e6e6e6;
+            border: 1px solid #ccc;
         }
         .stTextInput>div>div>input {
             border-radius: 8px;
-            padding: 0.5em;
+            padding: 0.6em;
+            font-size: 1rem;
         }
         .block-container {
             padding: 2rem 3rem;
@@ -41,7 +45,7 @@ st.markdown("""
 # --- Title Section ---
 st.markdown("""
     <h1 style='font-size: 3rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
-    <p style='font-size: 1.25rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
+    <p style='font-size: 1.2rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
 
 # --- Keyword Input ---
