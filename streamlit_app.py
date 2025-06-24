@@ -7,19 +7,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
-from Niche_Keyword_Dictionary_FIXED import niche_keywords  # make sure this file is uploaded to Streamlit Cloud
+from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# --- Keyword Input Section ---
-st.markdown("### 🎯 Keywords")
-col1, col2 = st.columns([4, 1])
-with col1:
-    query = st.text_input("Enter up to 5 keywords (comma-separated)", value="", key="keyword_input")
-with col2:
-    if st.button("🎲 Randomize Keywords"):
-        random_niche = random.choice(list(niche_keywords.keys()))
-        selected_keywords = random.sample(niche_keywords[random_niche], 5)
-        st.session_state["keyword_input"] = ", ".join(selected_keywords)
-        st.experimental_rerun()
 # Load API key from secrets
 API_KEY = st.secrets["API_KEY"]
 
@@ -35,27 +24,30 @@ sheets_api = build("sheets", "v4", credentials=credentials)
 # App title
 st.title("📺 YOUTUBE LEAD GENERATOR")
 
-# --- Sidebar ---
-st.markdown("### Enter Filters")
-
-# Keyword input with randomizer button
+# --- Keyword Input Section ---
+st.markdown("### 🎯 Keywords")
 col1, col2 = st.columns([4, 1])
-with col1:
-    query = st.text_input("Keywords (max 5, comma-separated)", value="")
-with col2:
-    if st.button("🎲 Randomize Keywords"):
-        random_niche = random.choice(list(niche_keywords.keys()))
-        query = ", ".join(random.sample(niche_keywords[random_niche], 5))
-        st.experimental_rerun()
+if "keyword_input" not in st.session_state:
+    st.session_state["keyword_input"] = ""
 
-# Other filters
+with col1:
+    query = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
+with col2:
+    if st.button("🎲 Randomize Keywords", key="random_btn"):
+        random_niche = random.choice(list(niche_keywords.keys()))
+        selected_keywords = random.sample(niche_keywords[random_niche], 5)
+        st.session_state["keyword_input"] = ", ".join(selected_keywords)
+        st.rerun()
+
+# --- Filters ---
+st.markdown("### 🔍 Filters")
 min_subs = st.number_input("Min Subscribers", value=5000)
 max_subs = st.number_input("Max Subscribers", value=65000)
-active_years = st.number_input("Only Channels Active in Last __ Years", value=2)
+active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
 # Button to run
 if st.button("🚀 Run Lead Search"):
-    if not query:
+    if not query.strip():
         st.warning("Please enter at least 1 keyword.")
     else:
         st.info("Scraping YouTube... Please wait...")
