@@ -53,19 +53,22 @@ st.markdown("""
 # --- Keyword Input Section ---
 st.markdown("### Keywords")
 
-if "keyword_input_display" not in st.session_state:
-    st.session_state["keyword_input_display"] = ""
+if "keyword_input" not in st.session_state:
+    st.session_state["keyword_input"] = ""
 
 col1, col2 = st.columns([4, 1])
 with col1:
-    query_value = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input_display"], key="keyword_input_display")
+    query_value = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input_textbox")
     st.session_state["keyword_input"] = query_value
 
 with col2:
     if st.button("🎲 Randomize"):
         random_niche = random.choice(list(niche_keywords.keys()))
-        selected_keywords = random.sample(niche_keywords[random_niche], 5)
-        st.session_state["keyword_input_display"] = ", ".join(selected_keywords)
+        if len(niche_keywords[random_niche]) >= 5:
+            selected_keywords = random.sample(niche_keywords[random_niche], 5)
+        else:
+            selected_keywords = niche_keywords[random_niche]
+        st.session_state["keyword_input"] = ", ".join(selected_keywords)
         st.rerun()
 
 # --- Filters ---
