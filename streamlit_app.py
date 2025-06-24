@@ -9,7 +9,7 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# --- Custom CSS for Clean Red-White UI ---
+# --- UI Styling ---
 st.markdown("""
     <style>
         html, body, [class*='css'] {
@@ -27,27 +27,12 @@ st.markdown("""
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            white-space: nowrap;
         }
         .stButton>button:hover {
             background-color: #cc0000;
         }
-        .stTextInput>div>div>input {
-            border-radius: 8px;
-            padding: 1em 1.2em;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            border: 1px solid #ccc;
-            height: auto;
-        }
         .block-container {
             padding: 2rem 3rem;
-        }
-        .random-button-container {
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-end;
-            height: 100%;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -57,14 +42,11 @@ st.markdown("""
     <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
 
-# --- Keyword Input Section ---
-st.markdown("### Keywords")
-
+# --- Keyword Input ---
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
 
-container = st.container()
-with container:
+with st.container():
     col1, col2 = st.columns([5, 1], gap="medium")
     with col1:
         st.session_state["keyword_input"] = st.text_area(
@@ -76,18 +58,13 @@ with container:
     with col2:
         st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
         if st.button("🎲 Randomize", key="randomize_btn"):
-            random_niche = random.choice(list(niche_keywords.keys()))
-            selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
-            st.session_state["keyword_input"] = ", ".join(selected_keywords)
+            niche = random.choice(list(niche_keywords.keys()))
+            keywords = random.sample(niche_keywords[niche], min(5, len(niche_keywords[niche])))
+            st.session_state["keyword_input"] = ", ".join(keywords)
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-query_value = st.session_state["keyword_input"]
-
-
-
 # --- Filters ---
-st.markdown("### Filters")
 col3, col4, col5 = st.columns(3)
 with col3:
     min_subs = st.number_input("Min Subscribers", value=5000)
@@ -96,10 +73,9 @@ with col4:
 with col5:
     active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
-# --- Search Button ---
+# --- Run Button ---
 run_button = st.button("Search YouTube for Leads")
 
-# --- YouTube Search Logic ---
 if run_button:
     query = st.session_state["keyword_input"]
     if not query.strip():
@@ -127,40 +103,35 @@ if run_button:
             return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", text))
 
         def get_upload_date(channel_id):
-            uploads_playlist = youtube.channels().list(
-                part="contentDetails", id=channel_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-            videos = youtube.playlistItems().list(
-                part="contentDetails", playlistId=uploads_playlist, maxResults=1).execute()
-            if not videos["items"]:
+            try:
+                uploads_playlist = youtube.channels().list(
+                    part="contentDetails", id=channel_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+                videos = youtube.playlistItems().list(
+                    part="contentDetails", playlistId=uploads_playlist, maxResults=1).execute()
+                if not videos["items"]:
+                    return None
+                date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
+                return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            except:
                 return None
-            date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
-            return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
         for keyword in keywords:
-            search_response = youtube.search().list(
-                q=keyword,
-                type="channel",
-                part="snippet",
-                maxResults=50
-            ).execute()
-
-            
-            if not channel_ids:
-                continue
-
-            
-
-            channel_ids = [item['snippet']['channelId'] for item in search_response['items'] if 'channelId' in item['snippet']]
-            if not channel_ids:
-                continue
-
             try:
+                search_response = youtube.search().list(
+                    q=keyword,
+                    type="channel",
+                    part="snippet",
+                    maxResults=50
+                ).execute()
+                channel_ids = [item['snippet']['channelId'] for item in search_response['items'] if 'channelId' in item['snippet']]
+                if not channel_ids:
+                    continue
                 details = youtube.channels().list(
                     part="snippet,statistics",
                     id=",".join(channel_ids)
                 ).execute()
             except Exception as e:
-                st.error(f"YouTube API error while fetching channel details: {e}")
+                st.error(f"YouTube API error: {e}")
                 continue
 
             for item in details['items']:
@@ -195,16 +166,15 @@ if run_button:
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
-            sheet = client.open("YT Leads")
-            ws = sheet.sheet1
-            ws.clear()
-            set_with_dataframe(ws, df)
+            sheet = client.open("YT Leads").sheet1
+            sheet.clear()
+            set_with_dataframe(sheet, df)
 
             checkbox_request = {
                 "requests": [{
                     "repeatCell": {
                         "range": {
-                            "sheetId": ws._properties['sheetId'],
+                            "sheetId": sheet._properties['sheetId'],
                             "startRowIndex": 1,
                             "endRowIndex": len(df) + 1,
                             "startColumnIndex": df.columns.get_loc("Status"),
@@ -222,10 +192,9 @@ if run_button:
                 }]
             }
 
-            spreadsheet_id = sheet.id
             sheets_api.spreadsheets().batchUpdate(
-                spreadsheetId=spreadsheet_id,
+                spreadsheetId=sheet.spreadsheet.id,
                 body=checkbox_request
             ).execute()
 
-            st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}")
+            st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
