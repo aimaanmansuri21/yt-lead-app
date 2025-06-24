@@ -27,7 +27,7 @@ st.title("📺 YouTube Lead Generator")
 query = st.text_input("🔍 Keywords (comma separated, max 5)", value="", max_chars=200)
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
-active_years = st.number_input("📅 Only Channels Active in Last Years", value=2)
+active_years = st.number_input("📅 Only Channels Active in Last X Years", value=2)
 
 # Button
 if st.button("🚀 Run Lead Search"):
@@ -48,23 +48,22 @@ if st.button("🚀 Run Lead Search"):
             return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", text))
 
         def get_upload_date(channel_id):
-    try:
-        uploads_playlist = youtube.channels().list(
-            part="contentDetails", id=channel_id
-        ).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            try:
+                uploads_playlist = youtube.channels().list(
+                    part="contentDetails", id=channel_id
+                ).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
-        videos = youtube.playlistItems().list(
-            part="contentDetails", playlistId=uploads_playlist, maxResults=1
-        ).execute()
+                videos = youtube.playlistItems().list(
+                    part="contentDetails", playlistId=uploads_playlist, maxResults=1
+                ).execute()
 
-        if not videos["items"]:
-            return None
+                if not videos["items"]:
+                    return None
 
-        date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
-        return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-
-    except Exception as e:
-        return None  # skip channel if upload date cannot be retrieved
+                date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
+                return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            except Exception as e:
+                return None
 
         for keyword in keywords:
             search_response = youtube.search().list(
@@ -158,4 +157,4 @@ if st.button("🚀 Run Lead Search"):
             )
 
             sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
-            st.markdown(f"[📄 View Sheet in Google Sheets]({sheet_url})", unsafe_allow_html=True)
+            st.markdown(f"[📄 View Google Sheet]({sheet_url})", unsafe_allow_html=True)
