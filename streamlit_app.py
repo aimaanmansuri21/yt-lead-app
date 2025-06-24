@@ -65,7 +65,7 @@ if "keyword_input" not in st.session_state:
 
 col1, col2 = st.columns([4, 1])
 with col1:
-    query_value = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input_textbox")
+    query_value = st.text_area("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], height=100)
     st.session_state["keyword_input"] = query_value
 
 with col2:
