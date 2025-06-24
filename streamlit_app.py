@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import re
 import random
+import re
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
-from Niche_Keyword_Dictionary_FIXED import niche_keywords  # ensure this file is in the same directory
+from Niche_Keyword_Dictionary_FIXED import niche_keywords  # your local dictionary file
 
 # Load API key from secrets
 API_KEY = st.secrets["API_KEY"]
@@ -21,34 +21,37 @@ credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
 client = gspread.authorize(credentials)
 
 # App title
-st.title("📺 YOUTUBE LEAD GENERATOR")
+st.title("📺 YouTube Lead Generator")
 
-# Sidebar filters
+# --- SESSION STATE ---
+if "random_keywords" not in st.session_state:
+    st.session_state.random_keywords = ""
+
+# Function to generate random keywords
+def generate_random_keywords():
+    niche = random.choice(list(niche_keywords.keys()))
+    keywords = random.sample(niche_keywords[niche], 5)
+    st.session_state.random_keywords = ", ".join(keywords)
+
+# --- Keyword Input + Randomize ---
 col1, col2 = st.columns([4, 1])
-
 with col1:
-    query = st.text_input("🔍 Keywords (max 5)", value="")
-
+    query = st.text_input("🎯 Keywords (max 5)", value=st.session_state.random_keywords)
 with col2:
-    if st.button("🎲 Randomize Keywords"):
-        random_niche = random.choice(list(niche_keywords.keys()))
-        query = ", ".join(random.sample(niche_keywords[random_niche], 5))
-        st.experimental_rerun()
+    if st.button("🎲 Randomize"):
+        generate_random_keywords()
 
+# --- Other Filters ---
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
-active_years = st.number_input("📆 Only Channels Active in Last X Years", value=1)
+active_years = st.number_input("📅 Only Channels Active in Last _Years_", value=2)
 
 # Button
 if st.button("🚀 Run Lead Search"):
-    if not query.strip():
-        st.warning("Please enter at least one keyword or use the randomizer.")
-        st.stop()
-
     st.info("Scraping YouTube... Please wait...")
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
-    keywords = [k.strip() for k in query.split(",") if k.strip()][:5]  # Limit to 5
+    keywords = [k.strip() for k in query.split(",") if k.strip()]
     all_data = []
 
     def extract_instagram(text):
@@ -56,7 +59,7 @@ if st.button("🚀 Run Lead Search"):
         return f"https://instagram.com/{match.group(3)}" if match else "None"
 
     def extract_emails(text):
-        return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", text))
+        return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text))
 
     def get_upload_date(channel_id):
         uploads_playlist = youtube.channels().list(
@@ -110,17 +113,47 @@ if st.button("🚀 Run Lead Search"):
     df = pd.DataFrame(all_data)
 
     if df.empty:
-        st.warning("No leads found. Try changing your filters.")
+        st.warning("No leads found. Try changing your filters or keyword.")
     else:
         st.success(f"✅ Found {len(df)} leads")
         st.dataframe(df)
 
         # Send to Google Sheet
-        sheet = client.open("YT Leads")
+        sheet_name = "YT Leads"
+        sheet = client.open(sheet_name)
         ws = sheet.sheet1
         ws.clear()
         set_with_dataframe(ws, df)
 
-        # Provide a button to open sheet
-        sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet.id}"
-        st.markdown(f"[📤 View the updated Google Sheet]({sheet_url})", unsafe_allow_html=True)
+        # Format "Status" column as checkboxes
+        checkbox_request = {
+            "requests": [{
+                "repeatCell": {
+                    "range": {
+                        "sheetId": ws._properties['sheetId'],
+                        "startRowIndex": 1,
+                        "endRowIndex": len(df) + 1,
+                        "startColumnIndex": df.columns.get_loc("Status"),
+                        "endColumnIndex": df.columns.get_loc("Status") + 1
+                    },
+                    "cell": {
+                        "dataValidation": {
+                            "condition": {"type": "BOOLEAN"},
+                            "strict": True,
+                            "showCustomUi": True
+                        }
+                    },
+                    "fields": "dataValidation"
+                }
+            }]
+        }
+
+        spreadsheet_id = sheet.id
+        client.request(
+            method="post",
+            uri=f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate",
+            json=checkbox_request
+        )
+
+        sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
+        st.markdown(f"✅ Leads saved successfully! [📄 Open Google Sheet]({sheet_url})", unsafe_allow_html=True)
