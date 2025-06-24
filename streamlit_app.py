@@ -9,33 +9,35 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# --- Custom CSS for YouTube-like Light Theme ---
+# --- Custom CSS for Clean Red-White UI ---
 st.markdown("""
     <style>
-        html, body, [class*="css"]  {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        html, body, [class*='css'] {
             background-color: #ffffff !important;
             color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         .stButton>button {
             background-color: #ff0000;
-            border: none;
-            color: #fff;
-            padding: 0.7em 1.5em;
-            border-radius: 8px;
-            font-weight: 600;
+            color: white;
+            padding: 0.75em 1.5em;
             font-size: 1rem;
-            transition: all 0.3s ease;
-            white-space: nowrap;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
         }
         .stButton>button:hover {
             background-color: #cc0000;
         }
         .stTextInput>div>div>input {
-            border-radius: 6px;
-            padding: 1.8em 1em;
-            font-size: 1.2rem;
+            border-radius: 8px;
+            padding: 1em 1.2em;
+            font-size: 1.1rem;
+            line-height: 1.6;
             border: 1px solid #ccc;
+            height: auto;
         }
         .block-container {
             padding: 2rem 3rem;
@@ -43,30 +45,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title Section ---
 st.markdown("""
     <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
-    <p style='font-size: 1.1rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
+    <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
 
-# --- Keyword Input ---
+# --- Keyword Input Section ---
 st.markdown("### Keywords")
 
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
 
 col1, col2 = st.columns([4, 1])
+with col1:
+    st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
+
 with col2:
-    st.markdown("""<div style='display: flex; justify-content: flex-end;'>""", unsafe_allow_html=True)
-    if st.button("🎲 Randomize", key="random_btn"):
+    if st.button("🎲 Randomize"):
         random_niche = random.choice(list(niche_keywords.keys()))
         selected_keywords = random.sample(niche_keywords[random_niche], 5)
         st.session_state["keyword_input"] = ", ".join(selected_keywords)
         st.rerun()
-    st.markdown("""</div>""", unsafe_allow_html=True)
-
-with col1:
-    st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
 
 # --- Filters ---
 st.markdown("### Filters")
@@ -78,10 +77,9 @@ with col4:
 with col5:
     active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
-# --- Run Button ---
+# --- Search Button ---
 run_button = st.button("Search YouTube for Leads")
 
-# --- YouTube Search Logic ---
 if run_button:
     query = st.session_state["keyword_input"]
     if not query.strip():
