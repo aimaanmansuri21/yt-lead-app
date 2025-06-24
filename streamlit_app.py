@@ -21,7 +21,7 @@ st.markdown("""
             background-color: #ff0000;
             color: white;
             padding: 0.75em 1.5em;
-            font-size: 2rem;
+            font-size: 0; /* hide text */
             font-weight: 600;
             border: none;
             border-radius: 8px;
@@ -34,6 +34,9 @@ st.markdown("""
         }
         .stButton>button:hover {
             background-color: #cc0000;
+        }
+        .stButton>button span {
+            font-size: 2rem;
         }
         .block-container {
             padding: 2rem 3rem;
@@ -61,7 +64,7 @@ with st.container():
         )
     with col2:
         st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
-        if st.button("🎲", key="randomize_btn"):
+        if st.button("<span>🎲</span>", key="randomize_btn"):
             niche = random.choice(list(niche_keywords.keys()))
             keywords = random.sample(niche_keywords[niche], min(5, len(niche_keywords[niche])))
             st.session_state["keyword_input"] = ", ".join(keywords)
