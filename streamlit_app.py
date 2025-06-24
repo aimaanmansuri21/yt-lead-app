@@ -26,18 +26,22 @@ st.title("📺 YOUTUBE LEAD GENERATOR")
 
 # --- Keyword Input Section ---
 st.markdown("### 🎯 Keywords")
-col1, col2 = st.columns([4, 1])
+
+# Initialize keyword input state
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
 
-with col1:
-    query = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
+# Randomize button before input box
+col1, col2 = st.columns([4, 1])
 with col2:
     if st.button("🎲 Randomize Keywords", key="random_btn"):
         random_niche = random.choice(list(niche_keywords.keys()))
         selected_keywords = random.sample(niche_keywords[random_niche], 5)
         st.session_state["keyword_input"] = ", ".join(selected_keywords)
         st.rerun()
+
+with col1:
+    query = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
 
 # --- Filters ---
 st.markdown("### 🔍 Filters")
