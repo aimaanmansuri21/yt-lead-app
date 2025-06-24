@@ -33,8 +33,8 @@ st.markdown("""
         }
         .stTextInput>div>div>input {
             border-radius: 6px;
-            padding: 1.4em;  /* Increased height */
-            font-size: 1rem;
+            padding: 1.8em 1em;
+            font-size: 1.2rem;
             border: 1px solid #ccc;
         }
         .block-container {
