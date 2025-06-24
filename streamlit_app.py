@@ -9,6 +9,17 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords  # make sure this file is uploaded to Streamlit Cloud
 
+# --- Keyword Input Section ---
+st.markdown("### 🎯 Keywords")
+col1, col2 = st.columns([4, 1])
+with col1:
+    query = st.text_input("Enter up to 5 keywords (comma-separated)", value="", key="keyword_input")
+with col2:
+    if st.button("🎲 Randomize Keywords"):
+        random_niche = random.choice(list(niche_keywords.keys()))
+        selected_keywords = random.sample(niche_keywords[random_niche], 5)
+        st.session_state["keyword_input"] = ", ".join(selected_keywords)
+        st.experimental_rerun()
 # Load API key from secrets
 API_KEY = st.secrets["API_KEY"]
 
