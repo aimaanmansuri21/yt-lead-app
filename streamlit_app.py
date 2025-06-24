@@ -70,7 +70,7 @@ with col1:
 
 with col2:
     st.markdown("""
-        <div style='display: flex; justify-content: flex-start; align-items: center; height: 100%; padding-top: 8px;'>
+        <div style='display: flex; justify-content: flex-start; align-items: flex-start; height: 100%; padding-top: 12px;'>
     """, unsafe_allow_html=True)
     if st.button("🎲 Randomize", key="randomize_btn"):
         random_niche = random.choice(list(niche_keywords.keys()))
@@ -129,3 +129,83 @@ if run_button:
             date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
             return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
+        for keyword in keywords:
+            search_response = youtube.search().list(
+                q=keyword,
+                type="channel",
+                part="snippet",
+                maxResults=50
+            ).execute()
+
+            channel_ids = [item['snippet']['channelId'] for item in search_response['items']]
+            details = youtube.channels().list(
+                part="snippet,statistics",
+                id=",".join(channel_ids)
+            ).execute()
+
+            for item in details['items']:
+                subs = int(item['statistics'].get('subscriberCount', 0))
+                if not (min_subs <= subs <= max_subs):
+                    continue
+
+                last_upload = get_upload_date(item["id"])
+                if not last_upload or (datetime.datetime.now(datetime.timezone.utc) - last_upload).days > active_years * 365:
+                    continue
+
+                desc = item['snippet']['description']
+                insta = extract_instagram(desc)
+                emails = extract_emails(desc)
+
+                all_data.append({
+                    "Channel Name": item["snippet"]["title"],
+                    "Channel URL": f"https://youtube.com/channel/{item['id']}",
+                    "Subscribers": subs,
+                    "Total Videos": item["statistics"].get("videoCount"),
+                    "Last Upload": last_upload.date(),
+                    "Instagram": insta,
+                    "Email": emails,
+                    "Status": ""
+                })
+
+        df = pd.DataFrame(all_data)
+
+        if df.empty:
+            st.warning("No leads found. Try changing your filters.")
+        else:
+            st.success(f"✅ Found {len(df)} leads")
+            st.dataframe(df)
+
+            sheet = client.open("YT Leads")
+            ws = sheet.sheet1
+            ws.clear()
+            set_with_dataframe(ws, df)
+
+            checkbox_request = {
+                "requests": [{
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": ws._properties['sheetId'],
+                            "startRowIndex": 1,
+                            "endRowIndex": len(df) + 1,
+                            "startColumnIndex": df.columns.get_loc("Status"),
+                            "endColumnIndex": df.columns.get_loc("Status") + 1
+                        },
+                        "cell": {
+                            "dataValidation": {
+                                "condition": {"type": "BOOLEAN"},
+                                "strict": True,
+                                "showCustomUi": True
+                            }
+                        },
+                        "fields": "dataValidation"
+                    }
+                }]
+            }
+
+            spreadsheet_id = sheet.id
+            sheets_api.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=checkbox_request
+            ).execute()
+
+            st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}")
