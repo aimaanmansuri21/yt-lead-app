@@ -9,54 +9,89 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# Load API key from secrets
-API_KEY = st.secrets["API_KEY"]
+# --- Custom CSS for Apple-like UI ---
+st.markdown("""
+    <style>
+        html, body, [class*="css"]  {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #ffffff;
+        }
+        .stButton>button {
+            background-color: #f5f5f7;
+            border: none;
+            color: #000;
+            padding: 0.75em 1.5em;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .stButton>button:hover {
+            background-color: #e5e5e7;
+        }
+        .stTextInput>div>div>input {
+            border-radius: 8px;
+            padding: 0.5em;
+        }
+        .block-container {
+            padding: 2rem 3rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-# Load Google credentials from secrets
-gspread_secrets = st.secrets["gspread"]
-credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-])
-client = gspread.authorize(credentials)
-sheets_api = build("sheets", "v4", credentials=credentials)
+# --- Title Section ---
+st.markdown("""
+    <h1 style='font-size: 3rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
+    <p style='font-size: 1.25rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
+""", unsafe_allow_html=True)
 
-# App title
-st.title("📺 YOUTUBE LEAD GENERATOR")
+# --- Keyword Input ---
+st.markdown("## 🎯 Keywords")
 
-# --- Keyword Input Section ---
-st.markdown("### 🎯 Keywords")
-
-# Initialize keyword input state
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
 
-# Randomize button before input box
 col1, col2 = st.columns([4, 1])
 with col2:
-    if st.button("🎲 Randomize Keywords", key="random_btn"):
+    if st.button("🎲 Randomize", key="random_btn"):
         random_niche = random.choice(list(niche_keywords.keys()))
         selected_keywords = random.sample(niche_keywords[random_niche], 5)
         st.session_state["keyword_input"] = ", ".join(selected_keywords)
         st.rerun()
 
 with col1:
-    query = st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
+    st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
 
 # --- Filters ---
-st.markdown("### 🔍 Filters")
-min_subs = st.number_input("Min Subscribers", value=5000)
-max_subs = st.number_input("Max Subscribers", value=65000)
-active_years = st.number_input("Only Channels Active in Last Years", value=2)
+st.markdown("## 🔍 Filters")
+col3, col4, col5 = st.columns(3)
+with col3:
+    min_subs = st.number_input("Min Subscribers", value=5000)
+with col4:
+    max_subs = st.number_input("Max Subscribers", value=65000)
+with col5:
+    active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
-# Button to run
-if st.button("🚀 Run Lead Search"):
+# --- Run Button ---
+st.markdown("## 🚀 Run Search")
+run_button = st.button("Search YouTube for Leads")
+
+if run_button:
+    query = st.session_state["keyword_input"]
     if not query.strip():
         st.warning("Please enter at least 1 keyword.")
     else:
         st.info("Scraping YouTube... Please wait...")
 
-        youtube = build("youtube", "v3", developerKey=API_KEY)
+        # Initialize APIs
+        youtube = build("youtube", "v3", developerKey=st.secrets["API_KEY"])
+        gspread_secrets = st.secrets["gspread"]
+        credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ])
+        client = gspread.authorize(credentials)
+        sheets_api = build("sheets", "v4", credentials=credentials)
+
         keywords = [k.strip() for k in query.split(",") if k.strip()]
         all_data = []
 
@@ -86,7 +121,6 @@ if st.button("🚀 Run Lead Search"):
             ).execute()
 
             channel_ids = [item['snippet']['channelId'] for item in search_response['items']]
-
             details = youtube.channels().list(
                 part="snippet,statistics",
                 id=",".join(channel_ids)
@@ -124,13 +158,11 @@ if st.button("🚀 Run Lead Search"):
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
-            # Send to Google Sheet
             sheet = client.open("YT Leads")
             ws = sheet.sheet1
             ws.clear()
             set_with_dataframe(ws, df)
 
-            # Add checkbox formatting
             checkbox_request = {
                 "requests": [{
                     "repeatCell": {
