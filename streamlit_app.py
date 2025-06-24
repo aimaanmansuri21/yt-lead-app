@@ -9,7 +9,7 @@ from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
-# --- Custom CSS for Clean Light UI ---
+# --- Custom CSS for YouTube-like Light Theme ---
 st.markdown("""
     <style>
         html, body, [class*="css"]  {
@@ -18,23 +18,23 @@ st.markdown("""
             color: #000000;
         }
         .stButton>button {
-            background-color: #f2f2f2;
-            border: 1px solid #ddd;
-            color: #000;
-            padding: 0.6em 1.2em;
-            border-radius: 12px;
-            font-weight: 500;
+            background-color: #ff0000;
+            border: none;
+            color: #fff;
+            padding: 0.7em 1.5em;
+            border-radius: 8px;
+            font-weight: 600;
             font-size: 1rem;
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            background-color: #e6e6e6;
-            border: 1px solid #ccc;
+            background-color: #cc0000;
         }
         .stTextInput>div>div>input {
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 0.6em;
             font-size: 1rem;
+            border: 1px solid #ccc;
         }
         .block-container {
             padding: 2rem 3rem;
@@ -44,12 +44,12 @@ st.markdown("""
 
 # --- Title Section ---
 st.markdown("""
-    <h1 style='font-size: 3rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
-    <p style='font-size: 1.2rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
+    <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
+    <p style='font-size: 1.1rem; color: #555;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
 
 # --- Keyword Input ---
-st.markdown("## 🎯 Keywords")
+st.markdown("### Keywords")
 
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
@@ -66,7 +66,7 @@ with col1:
     st.text_input("Enter up to 5 keywords (comma-separated)", value=st.session_state["keyword_input"], key="keyword_input")
 
 # --- Filters ---
-st.markdown("## 🔍 Filters")
+st.markdown("### Filters")
 col3, col4, col5 = st.columns(3)
 with col3:
     min_subs = st.number_input("Min Subscribers", value=5000)
@@ -76,7 +76,6 @@ with col5:
     active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
 # --- Run Button ---
-st.markdown("## 🚀 Run Search")
 run_button = st.button("Search YouTube for Leads")
 
 if run_button:
