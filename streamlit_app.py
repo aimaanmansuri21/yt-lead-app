@@ -22,7 +22,7 @@ credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
 client = gspread.authorize(credentials)
 
 # Sidebar filters
-query = st.text_input("🔍 Enter up to 5 keywords (comma separated)", value="make money online, side hustle")
+query = st.text_input("🔍 Enter up to 5 keywords (comma separated)", value="")
 min_subs = st.number_input("📉 Min Subscribers", value=5000)
 max_subs = st.number_input("📈 Max Subscribers", value=65000)
 active_years = st.number_input("📆 Only Channels Active in Last X Years", min_value=0, value=2)
