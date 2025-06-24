@@ -43,6 +43,12 @@ st.markdown("""
         .block-container {
             padding: 2rem 3rem;
         }
+        .random-button-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            height: 100%;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -63,11 +69,13 @@ with col1:
     st.session_state["keyword_input"] = query_value
 
 with col2:
+    st.markdown("<div class='random-button-container'>", unsafe_allow_html=True)
     if st.button("🎲 Randomize", key="randomize_btn"):
         random_niche = random.choice(list(niche_keywords.keys()))
         selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
         st.session_state["keyword_input"] = ", ".join(selected_keywords)
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Filters ---
 st.markdown("### Filters")
