@@ -21,19 +21,22 @@ st.markdown("""
             background-color: #ff0000;
             color: white;
             padding: 0.75em 1.5em;
-            font-size: 1rem;
+            font-size: 0; /* Hide default text */
             font-weight: 600;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
             line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .stButton>button:hover {
             background-color: #cc0000;
         }
-        .stButton>button span {
-            font-size: 2rem; /* Enlarged only the dice emoji */
+        .stButton>button span.emoji {
+            font-size: 2rem; /* Enlarged emoji */
         }
         .block-container {
             padding: 2rem 3rem;
