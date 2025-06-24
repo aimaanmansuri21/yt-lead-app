@@ -21,7 +21,7 @@ st.markdown("""
             background-color: #ff0000;
             color: white;
             padding: 0.75em 1.5em;
-            font-size: 0; /* hide text */
+            font-size: 0;
             font-weight: 600;
             border: none;
             border-radius: 8px;
@@ -37,6 +37,7 @@ st.markdown("""
         }
         .stButton>button span {
             font-size: 2rem;
+            line-height: 1;
         }
         .block-container {
             padding: 2rem 3rem;
@@ -71,4 +72,17 @@ with st.container():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-# rest of the code remains unchanged
+# --- Filters ---
+st.markdown("### Filters")
+col3, col4, col5 = st.columns(3)
+with col3:
+    min_subs = st.number_input("Min Subscribers", value=5000)
+with col4:
+    max_subs = st.number_input("Max Subscribers", value=65000)
+with col5:
+    active_years = st.number_input("Only Channels Active in Last Years", value=2)
+
+# --- Search Button ---
+run_button = st.button("Search YouTube for Leads")
+
+# Place rest of the logic here as needed.
