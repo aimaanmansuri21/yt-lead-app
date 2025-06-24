@@ -144,11 +144,24 @@ if run_button:
                 maxResults=50
             ).execute()
 
-            channel_ids = [item['snippet']['channelId'] for item in search_response['items']]
-            details = youtube.channels().list(
-                part="snippet,statistics",
-                id=",".join(channel_ids)
-            ).execute()
+            
+            if not channel_ids:
+                continue
+
+            
+
+            channel_ids = [item['snippet']['channelId'] for item in search_response['items'] if 'channelId' in item['snippet']]
+            if not channel_ids:
+                continue
+
+            try:
+                details = youtube.channels().list(
+                    part="snippet,statistics",
+                    id=",".join(channel_ids)
+                ).execute()
+            except Exception as e:
+                st.error(f"YouTube API error while fetching channel details: {e}")
+                continue
 
             for item in details['items']:
                 subs = int(item['statistics'].get('subscriberCount', 0))
