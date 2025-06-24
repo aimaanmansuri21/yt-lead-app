@@ -1,228 +1,138 @@
 import streamlit as st
-import pandas as pd
-import datetime
-import re
-import random
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
-from googleapiclient.discovery import build
-from Niche_Keyword_Dictionary_FIXED import niche_keywords
+import pandas as pd
+import openai
+import time
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-# --- UI Styling ---
-st.markdown("""
-    <style>
-        html, body, [class*='css'] {
-            background-color: #ffffff !important;
-            color: #000000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-        .stButton>button {
-            background-color: #ff0000;
-            color: white;
-            padding: 0.75em 1.5em;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .stButton>button:hover {
-            background-color: #cc0000;
-        }
-        .block-container {
-            padding: 2rem 3rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# --- Load secrets ---
+# Assumes you store your JSON credentials as a file and API key in Streamlit secrets
+SERVICE_ACCOUNT_INFO = st.secrets["gcp_service_account"]
+OPENAI_API_KEY = st.secrets["openai_api_key"]
 
-st.markdown("""
-    <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
-    <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
-""", unsafe_allow_html=True)
+# --- Google Sheets setup ---
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
-# --- Keyword Input ---
-if "keyword_input" not in st.session_state:
-    st.session_state["keyword_input"] = ""
+credentials = Credentials.from_service_account_info(
+    SERVICE_ACCOUNT_INFO, scopes=scopes
+)
+gc = gspread.authorize(credentials)
 
-with st.container():
-    col1, col2 = st.columns([5, 1], gap="medium")
-    with col1:
-        st.session_state["keyword_input"] = st.text_area(
-            "Enter up to 5 keywords (comma-separated)",
-            value=st.session_state["keyword_input"],
-            key="keyword_input_textbox",
-            height=100
-        )
-    with col2:
-        st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
-        if st.button("🎲 Randomize", key="randomize_btn"):
-            niche = random.choice(list(niche_keywords.keys()))
-            keywords = random.sample(niche_keywords[niche], min(5, len(niche_keywords[niche])))
-            st.session_state["keyword_input"] = ", ".join(keywords)
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+# Open your Google Sheet by name
+sheet = gc.open("ColabSheetAccess").sheet1
 
-# --- Filters ---
-col3, col4, col5 = st.columns(3)
-with col3:
-    min_subs = st.number_input("Min Subscribers", value=5000)
-with col4:
-    max_subs = st.number_input("Max Subscribers", value=65000)
-with col5:
-    active_years = st.number_input("Only Channels Active in Last Years", value=2)
+# Load data into pandas DataFrame
+data = sheet.get_all_records()
+df = pd.DataFrame(data)
 
-# --- Run Button ---
-run_button = st.button("Search YouTube for Leads")
+# --- OpenAI setup ---
+openai.api_key = OPENAI_API_KEY
 
-# --- YouTube API Service with Key Rotation ---
-def get_youtube_service():
-    for key in st.secrets["API_KEYS"]:
+def generate_email(channel_name, subscribers, bio):
+    prompt = f"""
+You are a professional video editor with 2 billion+ YouTube views and 4+ years of experience.
+
+Write a simple, friendly outreach email greeting the person by their channel name:
+
+Hey {channel_name},
+
+[Give a genuine compliment about their channel based on this bio: "{bio}"]
+
+Introduce yourself briefly as Aimaan, a video editor.
+
+Offer to edit their first video for free — no catch.
+
+End with a polite closing: "Thanks, Aimaan"
+
+Keep it casual, not salesy or pushy.  
+Make it sound natural and personal.
+
+Do NOT include a subject line or signature.
+"""
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+    )
+    return response['choices'][0]['message']['content']
+
+def generate_subject(channel_name):
+    subjects = [
+        f"Hey {channel_name}, quick question",
+        f"Loved your channel, {channel_name}",
+        f"A quick note for {channel_name}",
+        f"Thought you might like this",
+        f"Hello {channel_name}!"
+    ]
+    return random.choice(subjects)
+
+# Gmail sending setup
+your_email = "aimaanmansuri2@gmail.com"
+your_app_password = "itrl catl mepc iyqs"
+
+def send_email(to_email, subject, body):
+    msg = MIMEMultipart("alternative")
+    msg["From"] = your_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+
+    # Compose HTML email
+    html = f"<html><body><p>{body.replace(chr(10), '<br>')}</p></body></html>"
+    part = MIMEText(html, "html")
+    msg.attach(part)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(your_email, your_app_password)
+        server.send_message(msg)
+
+# --- Streamlit UI ---
+
+st.title("YouTube Outreach Automation")
+
+if st.button("Send Emails to Unsent Leads"):
+    if 'email_sent' not in df.columns:
+        df['email_sent'] = ""
+
+    email_signature = """
+<br><br>Regards,<br>
+Aimaan | Video Editor & Content Curator<br>
+<a href='https://aimaanedits.com'>www.aimaanedits.com</a><br>
+<a href='https://instagram.com/aimaanedits'>www.instagram.com/aimaanedits</a>
+"""
+
+    progress_text = st.empty()
+    for i, row in df.iterrows():
+        if str(row['email_sent']).strip().lower() == 'yes':
+            progress_text.text(f"⏩ Skipping {row['channel_name']} (already emailed)")
+            continue
+
+        email = row.get('email', '').strip()
+        if not email or '@' not in email:
+            progress_text.text(f"⚠️ Skipping {row['channel_name']} due to missing/invalid email")
+            continue
+
         try:
-            yt = build("youtube", "v3", developerKey=key)
-            yt.search().list(q="test", part="snippet", maxResults=1).execute()
-            return yt
+            channel_name = row['channel_name']
+            subject = generate_subject(channel_name)
+            email_body = generate_email(channel_name, row['subscribers'], row['about_us'])
+            email_body += email_signature
+
+            send_email(email, subject, email_body)
+
+            df.at[i, 'email_sent'] = 'Yes'
+            progress_text.text(f"✅ Email sent to {email}")
+
+            time.sleep(random.uniform(5, 15))
         except Exception as e:
-            if "quotaExceeded" in str(e):
-                continue
-            else:
-                st.error(f"Unexpected YouTube API error: {e}")
-                break
-    st.error("❌ All API keys have exceeded their quota. Try again tomorrow.")
-    return None
+            progress_text.text(f"❌ Error with {row['channel_name']}: {e}")
 
-# --- Run Logic ---
-if run_button:
-    query = st.session_state["keyword_input"]
-    if not query.strip():
-        st.warning("Please enter at least 1 keyword.")
-    else:
-        st.info("Scraping YouTube... Please wait...")
-
-        youtube = get_youtube_service()
-        if youtube is None:
-            st.stop()
-
-        gspread_secrets = st.secrets["gspread"]
-        credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ])
-        client = gspread.authorize(credentials)
-        sheets_api = build("sheets", "v4", credentials=credentials)
-
-        keywords = [k.strip() for k in query.split(",") if k.strip()]
-        all_data = []
-
-        def extract_instagram(text):
-            match = re.search(r"(https?://)?(www\.)?instagram\.com/([a-zA-Z0-9_.]+)", text)
-            return f"https://instagram.com/{match.group(3)}" if match else "None"
-
-        def extract_emails(text):
-            return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", text))
-
-        def get_upload_date(channel_id):
-            try:
-                uploads_playlist = youtube.channels().list(
-                    part="contentDetails", id=channel_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-                videos = youtube.playlistItems().list(
-                    part="contentDetails", playlistId=uploads_playlist, maxResults=1).execute()
-                if not videos["items"]:
-                    return None
-                date_str = videos["items"][0]["contentDetails"]["videoPublishedAt"]
-                return datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            except:
-                return None
-
-        for keyword in keywords:
-            try:
-                search_response = youtube.search().list(
-                    q=keyword,
-                    type="channel",
-                    part="snippet",
-                    maxResults=50
-                ).execute()
-                channel_ids = [item['snippet']['channelId'] for item in search_response['items'] if 'channelId' in item['snippet']]
-                if not channel_ids:
-                    continue
-                try:
-                    details = youtube.channels().list(
-                        part="snippet,statistics",
-                        id=",".join(channel_ids)
-                    ).execute()
-                except Exception as e:
-                    if "quotaExceeded" in str(e):
-                        st.error("⚠️ You've hit your YouTube API quota. Try again tomorrow or use a new API key.")
-                        break
-                    else:
-                        st.error(f"YouTube API error: {e}")
-                        continue
-            except Exception as e:
-                st.error(f"YouTube API error: {e}")
-                continue
-
-            for item in details['items']:
-                subs = int(item['statistics'].get('subscriberCount', 0))
-                if not (min_subs <= subs <= max_subs):
-                    continue
-
-                last_upload = get_upload_date(item["id"])
-                if not last_upload or (datetime.datetime.now(datetime.timezone.utc) - last_upload).days > active_years * 365:
-                    continue
-
-                desc = item['snippet']['description']
-                insta = extract_instagram(desc)
-                emails = extract_emails(desc)
-
-                all_data.append({
-                    "Channel Name": item["snippet"]["title"],
-                    "Channel URL": f"https://youtube.com/channel/{item['id']}",
-                    "Subscribers": subs,
-                    "Total Videos": item["statistics"].get("videoCount"),
-                    "Last Upload": last_upload.date(),
-                    "Instagram": insta,
-                    "Email": emails,
-                    "Status": ""
-                })
-
-        df = pd.DataFrame(all_data)
-
-        if df.empty:
-            st.warning("No leads found. Try changing your filters.")
-        else:
-            st.success(f"✅ Found {len(df)} leads")
-            st.dataframe(df)
-
-            sheet = client.open("YT Leads").sheet1
-            sheet.clear()
-            set_with_dataframe(sheet, df)
-
-            checkbox_request = {
-                "requests": [{
-                    "repeatCell": {
-                        "range": {
-                            "sheetId": sheet._properties['sheetId'],
-                            "startRowIndex": 1,
-                            "endRowIndex": len(df) + 1,
-                            "startColumnIndex": df.columns.get_loc("Status"),
-                            "endColumnIndex": df.columns.get_loc("Status") + 1
-                        },
-                        "cell": {
-                            "dataValidation": {
-                                "condition": {"type": "BOOLEAN"},
-                                "strict": True,
-                                "showCustomUi": True
-                            }
-                        },
-                        "fields": "dataValidation"
-                    }
-                }]
-            }
-
-            sheets_api.spreadsheets().batchUpdate(
-                spreadsheetId=sheet.spreadsheet.id,
-                body=checkbox_request
-            ).execute()
-
-            st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+    set_with_dataframe(sheet, df)
+    st.success("🎉 All leads have been processed and Google Sheet updated!")
