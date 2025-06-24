@@ -65,7 +65,7 @@ if "keyword_input" not in st.session_state:
 
 container = st.container()
 with container:
-    col1, col2 = st.columns([4, 1])
+    col1, col2 = st.columns([5, 1], gap="medium")
     with col1:
         st.session_state["keyword_input"] = st.text_area(
             "Enter up to 5 keywords (comma-separated)",
@@ -74,11 +74,13 @@ with container:
             height=100
         )
     with col2:
+        st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
         if st.button("🎲 Randomize", key="randomize_btn"):
             random_niche = random.choice(list(niche_keywords.keys()))
             selected_keywords = random.sample(niche_keywords[random_niche], min(5, len(niche_keywords[random_niche])))
             st.session_state["keyword_input"] = ", ".join(selected_keywords)
             st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
 query_value = st.session_state["keyword_input"]
 
