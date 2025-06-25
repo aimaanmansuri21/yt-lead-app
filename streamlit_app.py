@@ -18,7 +18,7 @@ def extract_traits_from_bio(bio):
     prompt = f"""\nYou are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.\n\nBio:\n'''{bio}'''\n\nReturn traits in a Python list format.\n"""
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5 turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
