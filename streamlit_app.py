@@ -37,7 +37,7 @@ st.markdown("""
             background-color: #cc0000;
         }
         .stButton>button span {
-            font-size: 2rem;
+            font-size: 1.5rem;
             line-height: 1;
         }
         .block-container {
@@ -66,7 +66,7 @@ with st.container():
         )
     with col2:
         st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
-        if st.button("<span>🎲</span>", key="randomize_btn"):
+        if st.button("🎲", key="randomize_btn"):
             niche = random.choice(list(niche_keywords.keys()))
             keywords = random.sample(niche_keywords[niche], min(5, len(niche_keywords[niche])))
             st.session_state["keyword_input"] = ", ".join(keywords)
