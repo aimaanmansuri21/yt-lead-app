@@ -15,10 +15,17 @@ openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Trait Extraction Function ---
 def extract_traits_from_bio(bio):
-    prompt = f"""\nYou are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.\n\nBio:\n'''{bio}'''\n\nReturn traits in a Python list format.\n"""
+    prompt = f"""
+You are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.
+
+Bio:
+{bio}
+
+Return traits in a Python list format, like: ["trait1", "trait2", "trait3", "trait4", "trait5"]
+"""
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5 turbo",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
@@ -26,10 +33,16 @@ def extract_traits_from_bio(bio):
             temperature=0.7
         )
         traits_raw = response["choices"][0]["message"]["content"]
-        match = re.findall(r"[-•*]?\s*([\w\s\-']+)", traits_raw)
-        traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 2]
+
+        # Try parsing traits as list
+        match = re.findall(r'"(.*?)"', traits_raw)
+        if not match:
+            raise ValueError(f"No valid traits found. Raw output: {traits_raw}")
+
+        traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 1]
         return ", ".join(traits_cleaned[:5])
     except Exception as e:
+        st.warning(f"⚠️ OpenAI error: {e}")
         return "Could not extract traits"
 
 # --- UI Styling ---
