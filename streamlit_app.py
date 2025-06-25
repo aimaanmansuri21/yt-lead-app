@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
 # --- OpenAI Key ---
-openai.api_key = st.secrets["AIzaSyDdaWcwHmMp_CiCPsZBKQR8z4M6r3HQwD8"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Trait Extraction Function ---
 def extract_traits_from_bio(bio):
