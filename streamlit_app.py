@@ -20,17 +20,18 @@ st.markdown("""
         .stButton>button {
             background-color: #ff0000;
             color: white;
-            padding: 0.75em 1.5em;
-            font-size: 0;
+            padding: 0.75em 2em;
+            font-size: 1rem;
             font-weight: 600;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            line-height: 1;
+            line-height: 1.2;
             display: flex;
             align-items: center;
             justify-content: center;
+            white-space: nowrap;
         }
         .stButton>button:hover {
             background-color: #cc0000;
@@ -43,6 +44,8 @@ st.markdown("""
             padding: 2rem 3rem;
         }
     </style>
+""", unsafe_allow_html=True)
+
 """, unsafe_allow_html=True)
 
 st.markdown("""
