@@ -21,7 +21,7 @@ def extract_traits_from_bio(bio):
         return "No bio / too short"
 
     prompt = f"""
-You are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.
+You are an expert at analyzing YouTube channel bios. Based on the bio below, identify 5 descriptive personality or content traits this creator likely has. Traits should be specific, multi-word if helpful, and reflect tone, intent, or style — not just generic adjectives.
 
 Bio:
 {bio}
