@@ -50,12 +50,6 @@ st.markdown("""
     <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
     <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
-    <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
-""", unsafe_allow_html=True)
 
 # --- Keyword Input ---
 if "keyword_input" not in st.session_state:
