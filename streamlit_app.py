@@ -4,10 +4,40 @@ import datetime
 import re
 import random
 import gspread
+import openai
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
+
+# --- OpenAI Key ---
+openai.api_key = st.secrets["AIzaSyDdaWcwHmMp_CiCPsZBKQR8z4M6r3HQwD8"]
+
+# --- Trait Extraction Function ---
+def extract_traits_from_bio(bio):
+    prompt = f"""
+You are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.
+
+Bio:
+"""{bio}"""
+
+Return traits in a Python list format.
+"""
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        traits_raw = response["choices"][0]["message"]["content"]
+        match = re.findall(r"[-•*]?\s*([\w\s\-']+)", traits_raw)
+        traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 2]
+        return ", ".join(traits_cleaned[:5])
+    except Exception as e:
+        return "Could not extract traits"
 
 # --- UI Styling ---
 st.markdown("""
@@ -94,7 +124,6 @@ if run_button:
     else:
         st.info("Scraping YouTube... Please wait...")
 
-        # API Rotation Logic
         api_keys = st.secrets["API_KEYS"]
         youtube = None
         for key in api_keys:
@@ -108,7 +137,6 @@ if run_button:
             st.error("❌ All API keys have exceeded their quota. Try again tomorrow.")
             st.stop()
 
-        # Google Sheets Auth
         gspread_secrets = st.secrets["gspread"]
         credentials = Credentials.from_service_account_info(gspread_secrets, scopes=[
             "https://www.googleapis.com/auth/spreadsheets",
@@ -169,6 +197,7 @@ if run_button:
                     desc = item['snippet']['description']
                     insta = extract_instagram(desc)
                     emails = extract_emails(desc)
+                    traits = extract_traits_from_bio(desc)
 
                     all_data.append({
                         "Channel Name": item["snippet"]["title"],
@@ -178,6 +207,7 @@ if run_button:
                         "Last Upload": last_upload.date(),
                         "Instagram": insta,
                         "Email": emails,
+                        "Traits": traits,
                         "Status": ""
                     })
 
