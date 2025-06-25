@@ -11,18 +11,11 @@ from googleapiclient.discovery import build
 from Niche_Keyword_Dictionary_FIXED import niche_keywords
 
 # --- OpenAI Key ---
-openai.api_key = st.secrets["AIzaSyDdaWcwHmMp_CiCPsZBKQR8z4M6r3HQwD8"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Trait Extraction Function ---
 def extract_traits_from_bio(bio):
-    prompt = f"""
-You are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.
-
-Bio:
-"""{bio}"""
-
-Return traits in a Python list format.
-"""
+    prompt = f"""\nYou are an expert at analyzing YouTube channel bios. Based on the bio below, list 5 personality or content traits this creator likely has.\n\nBio:\n'''{bio}'''\n\nReturn traits in a Python list format.\n"""
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
