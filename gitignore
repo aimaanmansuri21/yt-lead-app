@@ -1,0 +1,22 @@
+# Ignore Python junk
+__pycache__/
+*.py[cod]
+*.env
+
+# Ignore virtual environments
+.venv/
+env/
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints
+
+# Ignore VSCode settings (if you're using it)
+.vscode/
+
+# Ignore Streamlit secrets (VERY IMPORTANT)
+.streamlit/secrets.toml
+
+# Ignore any log or cache files
+*.log
+*.sqlite3
+.cache/
