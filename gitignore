@@ -20,3 +20,7 @@ env/
 *.log
 *.sqlite3
 .cache/
+
+
+# Keep secret stuff private
+.streamlit/secrets.toml
