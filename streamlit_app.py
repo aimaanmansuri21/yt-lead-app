@@ -5,56 +5,7 @@ import datetime
 import re
 import ast
 import gspread
-import openai
-from openai import OpenAI
-from google.oauth2.service_account import Credentials
-from gspread_dataframe import set_with_dataframe
-from googleapiclient.discovery import build
-
-# --- OpenAI Client ---
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-# --- Trait Extraction Function ---
-def extract_traits_from_bio(bio):
-    if not bio or len(bio.strip()) < 20:
-        return "No bio / too short"
-
-    prompt = f"""
-You are an expert at analyzing YouTube channel bios. Based on the bio below, identify 5 descriptive personality or content traits this creator likely has. Traits should be specific, multi-word if helpful, and reflect tone, intent, or style — not just generic adjectives.
-
-Bio:
-{bio}
-
-Return traits in a Python list format, like: [\"trait1\", \"trait2\", \"trait3\", \"trait4\", \"trait5\"]
-"""
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
-        )
-        traits_raw = response.choices[0].message.content
-
-        match = re.findall(r'\"(.*?)\"', traits_raw)
-        if not match:
-            raise ValueError(f"No valid traits found. Raw output: {traits_raw}")
-
-        traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 1]
-        return ", ".join(traits_cleaned[:5])
-    except Exception as e:
-        return "Could not extract traits"
-
-#cell 1
-import streamlit as st
-import pandas as pd
-import datetime
-import re
-import ast
-import gspread
+import random
 import openai
 from openai import OpenAI
 from google.oauth2.service_account import Credentials
@@ -142,12 +93,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("""
-    <h1 style='font-size: 2.8rem; font-weight: 600;'>📺 YouTube Lead Generator</h1>
+    <h1 style='font-size: 2.8rem; font-weight: 600;'>📺t YouTube Lead Generator</h1>
     <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
-
-# ... rest of your script continues unchanged ...
-
 
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
@@ -163,13 +111,15 @@ with st.container():
         )
     with col2:
         st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
-        if st.button("🎲", key="randomize_btn"):
+        if st.button("🌹", key="randomize_btn"):
             try:
-                prompt = """
-You are a YouTube strategist. Give me a random niche (not generic) and 5 trending or high-engagement YouTube keyword phrases in that niche. 
-The keywords should sound like things people search for or use as video titles.
+                random_seed = random.randint(10000, 99999)
+                prompt = f"""
+You are a YouTube strategist with an unpredictable, creative mind. Based on the randomness seed `{random_seed}`, give me a truly unexpected and specific niche (not a generic category), and 5 trending or highly clickable YouTube keyword phrases for it.
 
-Return in this exact format:
+Avoid common niches like fitness, cooking, or travel unless you're giving a unique twist.
+
+Format your response exactly like this:
 Niche: <niche>
 Keywords: ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
 """
@@ -179,7 +129,7 @@ Keywords: ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
                         {"role": "system", "content": "You are a helpful assistant."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.8
+                    temperature=0.7
                 )
                 text = response.choices[0].message.content
                 niche = re.search(r"Niche:\s*(.+)", text).group(1).strip()
@@ -191,7 +141,6 @@ Keywords: ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
                 st.error(f"Failed to generate keywords: {e}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Filters ---
 col3, col4, col5 = st.columns(3)
 with col3:
     min_subs = st.number_input("Min Subscribers", value=5000)
@@ -306,7 +255,12 @@ if run_button:
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
-            sheet = client_gs.open("YT Leads")
+            try:
+                sheet = client_gs.open("YT Leads")
+            except gspread.SpreadsheetNotFound:
+                sheet = client_gs.create("YT Leads")
+                sheet.share(st.secrets["gspread"]["client_email"], perm_type="user", role="writer")
+
             ws = sheet.sheet1
             ws.clear()
             set_with_dataframe(ws, df)
@@ -338,4 +292,4 @@ if run_button:
                 body=checkbox_request
             ).execute()
 
-            st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.id}")
+            st.link_button("📄 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.id}")
