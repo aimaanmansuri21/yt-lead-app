@@ -268,7 +268,14 @@ if run_button:
         if df.empty:
             st.warning("No leads found. Try changing your filters.")
         else:
-            st.success(f"✅ Found {len(df)} leads")
+            # Toggle: Only show leads with email
+            email_filter = st.toggle("📧 Show only leads with email", value=False)
+            if email_filter:
+                df = df[df["Email"].str.strip() != ""]
+                st.success(f"✅ Showing {len(df)} leads with email")
+            else:
+                st.success(f"✅ Showing all {len(df)} leads")
+
             st.dataframe(df)
 
             try:
