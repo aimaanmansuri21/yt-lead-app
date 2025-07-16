@@ -263,6 +263,8 @@ if run_button:
                 st.error(f"Error with keyword '{keyword}': {e}")
 
         df = pd.DataFrame(all_data)
+        df.drop_duplicates(subset="Channel Name", inplace=True)
+
         if df.empty:
             st.warning("No leads found. Try changing your filters.")
         else:
