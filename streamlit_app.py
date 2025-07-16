@@ -26,9 +26,8 @@ You are an expert at analyzing YouTube channel bios. Based on the bio below, ide
 Bio:
 {bio}
 
-Return traits in a Python list format, like: ["trait1", "trait2", "trait3", "trait4", "trait5"]
+Return traits in a Python list format like: ["trait1", "trait2", "trait3", "trait4", "trait5"]
 """
-
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -95,9 +94,13 @@ st.markdown("""
     <p style='font-size: 1.1rem; color: #444;'>Find and organize high-potential creators in seconds.</p>
 """, unsafe_allow_html=True)
 
+# --- Session State Setup ---
 if "keyword_input" not in st.session_state:
     st.session_state["keyword_input"] = ""
+if "email_toggle" not in st.session_state:
+    st.session_state["email_toggle"] = False
 
+# --- Keyword Input + Niche Generator ---
 with st.container():
     col1, col2 = st.columns([5, 1], gap="medium")
     with col1:
@@ -163,6 +166,10 @@ with col4:
 with col5:
     active_years = st.number_input("Only Channels Active in Last Years", value=2)
 
+# --- Always-Visible Email Filter Toggle ---
+st.session_state["email_toggle"] = st.toggle("📧 Only show leads with email", value=st.session_state["email_toggle"])
+
+# --- Scraping Execution ---
 run_button = st.button("Search YouTube for Leads")
 
 if run_button:
@@ -268,9 +275,7 @@ if run_button:
         if df.empty:
             st.warning("No leads found. Try changing your filters.")
         else:
-            # Toggle: Only show leads with email
-            email_filter = st.toggle("📧 Show only leads with email", value=False)
-            if email_filter:
+            if st.session_state["email_toggle"]:
                 df = df[df["Email"].str.strip() != ""]
                 st.success(f"✅ Showing {len(df)} leads with email")
             else:
