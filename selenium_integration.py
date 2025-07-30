@@ -39,16 +39,16 @@ def scrape_youtube_emails(channel_urls, limit=5):
     Returns a dict: {channel_url: email}
     """
 
-    # Set up Chrome options for Streamlit Cloud
+    # Chrome/Chromium setup for Streamlit Cloud
     chrome_options = Options()
-    chrome_options.binary_location = "/usr/bin/google-chrome"
+    chrome_options.binary_location = "/usr/bin/chromium"
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-notifications")
     chrome_options.add_argument("--window-size=1920x1080")
 
-    # Point Selenium to pre-installed ChromeDriver in Streamlit Cloud
+    # Point Selenium to pre-installed Chromium driver in Streamlit Cloud
     service = Service("/usr/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
