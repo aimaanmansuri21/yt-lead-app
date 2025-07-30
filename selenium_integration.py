@@ -1,5 +1,3 @@
-# selenium_integration.py
-
 import time
 import re
 import streamlit as st
@@ -10,18 +8,18 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from twocaptcha import TwoCaptcha
 
-# Load API key from secrets
+# Load API key from Streamlit secrets
 CAPTCHA_API_KEY = st.secrets["CAPTCHA_API_KEY"]
 
 def solve_recaptcha_v2(driver, sitekey, page_url):
-    """Solve reCAPTCHA V2 using 2Captcha API"""
+    """Solve reCAPTCHA V2 using 2Captcha API and return True if successful"""
     solver = TwoCaptcha(CAPTCHA_API_KEY)
     try:
-        st.write(f"Solving captcha for: {page_url}")
+        st.write(f"🧩 Solving captcha for: {page_url}")
         result = solver.recaptcha(sitekey=sitekey, url=page_url)
         token = result['code']
-        
-        # Inject token into page
+
+        # Inject token into the g-recaptcha-response element
         driver.execute_script(
             'document.getElementById("g-recaptcha-response").style.display = "block";'
         )
@@ -35,27 +33,31 @@ def solve_recaptcha_v2(driver, sitekey, page_url):
         return False
 
 def scrape_youtube_emails(channel_urls, limit=5):
-    """Scrape emails from YouTube About pages with captcha solving"""
-    
+    """
+    Scrape emails from YouTube About pages with captcha solving.
+    Returns a dict: {channel_url: email}
+    """
+
+    # Set up Chrome options (visible browser for testing)
     chrome_options = Options()
     chrome_options.add_argument("--disable-notifications")
     chrome_options.add_argument("--start-maximized")
-    
+
     driver = webdriver.Chrome(options=chrome_options)
     wait = WebDriverWait(driver, 10)
-    
+
     results = {}
 
     for i, url in enumerate(channel_urls[:limit]):
         email_found = None
         about_url = url.rstrip("/") + "/about"
         st.write(f"[{i+1}/{limit}] Visiting {about_url}")
-        
+
         try:
             driver.get(about_url)
             time.sleep(3)
 
-            # Click "View Email Address"
+            # Look for the "View Email Address" button
             try:
                 view_email_btn = wait.until(EC.presence_of_element_located(
                     (By.XPATH, "//yt-formatted-string[contains(text(),'View Email Address')]")
@@ -63,21 +65,21 @@ def scrape_youtube_emails(channel_urls, limit=5):
                 view_email_btn.click()
                 time.sleep(2)
 
-                # Check for captcha iframe
+                # If captcha appears
                 if "recaptcha" in driver.page_source.lower():
                     sitekey_match = re.search(r'data-sitekey="(.*?)"', driver.page_source)
                     if sitekey_match:
                         sitekey = sitekey_match.group(1)
                         if solve_recaptcha_v2(driver, sitekey, about_url):
-                            # Click submit after solving
+                            # Attempt to click submit after solving
                             try:
                                 submit_btn = driver.find_element(By.XPATH, "//button[contains(text(),'Submit')]")
                                 submit_btn.click()
                                 time.sleep(3)
                             except:
                                 pass
-                
-                # Extract email from page
+
+                # Extract email after reveal
                 page_source = driver.page_source
                 matches = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", page_source)
                 if matches:
@@ -92,7 +94,7 @@ def scrape_youtube_emails(channel_urls, limit=5):
 
         except Exception as e:
             st.error(f"Error scraping {url}: {e}")
-        
+
         results[url] = email_found if email_found else "None found"
         time.sleep(2)
 
