@@ -1,4 +1,3 @@
-#cell 1
 import streamlit as st
 import pandas as pd
 import datetime
@@ -11,6 +10,9 @@ from openai import OpenAI
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
+
+# Import Selenium integration
+from selenium_integration import scrape_youtube_emails
 
 # --- OpenAI Client ---
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -44,7 +46,7 @@ Return traits in a Python list format, like: ["trait1", "trait2", "trait3", "tra
             raise ValueError(f"No valid traits found. Raw output: {traits_raw}")
         traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 1]
         return ", ".join(traits_cleaned[:5])
-    except Exception as e:
+    except Exception:
         return "Could not extract traits"
 
 # --- UI Styling ---
@@ -53,7 +55,6 @@ st.markdown("""
         html, body, [class*='css'] {
             background-color: #ffffff !important;
             color: #000000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         .stButton>button {
             background-color: #ff0000;
@@ -61,31 +62,14 @@ st.markdown("""
             padding: 0.75em 2em;
             font-size: 1rem;
             font-weight: 600;
-            border: none;
             border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            line-height: 1.2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
         }
         .stButton>button:hover {
             background-color: #cc0000;
         }
         .block-container {
             padding: 2rem 3rem;
-        }
-        .stNumberInput>div>input {
-            text-align: center;
-        }
-        label[for^='number_input_'] {
-            display: block;
-            text-align: center;
-            margin-top: 0.25rem;
-            font-weight: 500;
-            font-size: 0.9rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -107,52 +91,6 @@ with st.container():
             key="keyword_input_textbox",
             height=100
         )
-    with col2:
-        st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
-
-        preset_niches = [
-            "Tech Reviews", "Mobile App Tutorials", "Smartphone Comparisons", "Personal Finance", "Cryptocurrency & Blockchain",
-            "Real Estate Walkthroughs", "Fitness at Home", "Weight Loss Journeys", "Healthy Meal Prep", "Fashion for Men",
-            "Streetwear Styling", "Beauty Tutorials", "Skincare Routines", "Minimalist Living", "Home Decor Ideas",
-            "Interior Design", "DIY & Crafts", "Productivity Tips", "Study With Me / Pomodoro", "Self-Improvement",
-            "Motivation & Mindset", "Book Summaries", "Gaming Walkthroughs", "Live Gaming Commentary", "Esports News",
-            "Comedy Sketches", "Reaction Videos", "Try Not To Laugh Challenges", "Unboxing Videos", "Product Reviews",
-            "Parenting Tips", "Kids Educational Content", "Toy Reviews", "Educational Animations", "History Explained",
-            "Science Experiments", "True Crime Stories", "Storytelling with Animation", "Horror Short Films", "Vlogs",
-            "Travel Hacks & Destinations", "Van Life / Tiny Home", "Car Reviews", "Supercar Spotting", "Podcast Clips",
-            "Interview Highlights", "AI Tools & Automation", "Software Tutorials", "Small Business Marketing", "Freelancing & Side Hustles"
-        ]
-
-        if st.button("🎲", key="randomize_btn"):
-            try:
-                chosen_niche = random.choice(preset_niches)
-                prompt = f"""
-You are a YouTube SEO expert. Give me 5 realistic, high-search, and clickable YouTube keyword phrases that creators in the niche \"{chosen_niche}\" are using right now.
-
-Instructions:
-- The keywords must be things people would actually search for or use as video titles
-- Avoid made-up, vague, or overly generic terms
-- Prioritize high engagement and relevance
-
-Return the list in Python format like:
-["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
-"""
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7
-                )
-                text = response.choices[0].message.content
-                keywords = ast.literal_eval(re.search(r"\[(.*?)\]", text, re.DOTALL).group(0))
-                st.session_state["keyword_input"] = ", ".join(keywords)
-                st.toast(f"🎯 Niche: {chosen_niche}")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Failed to generate keywords: {e}")
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Lead Filtering UI ---
 col3, col4, col5 = st.columns(3)
@@ -244,17 +182,14 @@ if run_button:
 
                     desc = item['snippet']['description']
                     insta = extract_instagram(desc)
-                    emails = extract_emails(desc)
                     traits = extract_traits_from_bio(desc)
 
                     all_data.append({
                         "Channel Name": item["snippet"]["title"],
                         "Channel URL": f"https://youtube.com/channel/{item['id']}",
                         "Subscribers": subs,
-                        "Total Videos": item["statistics"].get("videoCount"),
-                        "Last Upload": last_upload.date(),
                         "Instagram": insta,
-                        "Email": emails,
+                        "Email": "",  # Will be filled by Selenium
                         "Traits": traits,
                         "Status": ""
                     })
@@ -271,6 +206,13 @@ if run_button:
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
+            # 🚀 NEW: Run Selenium + 2Captcha scraping
+            st.info("🔍 Running Selenium to fetch emails (limit 5 for testing)...")
+            channel_urls = df["Channel URL"].tolist()
+            email_map = scrape_youtube_emails(channel_urls, limit=5)
+            df["Email"] = df["Channel URL"].map(email_map)
+            st.success("📧 Email scraping complete")
+
             try:
                 sheet = client_gs.open("YT Leads")
             except gspread.SpreadsheetNotFound:
@@ -280,32 +222,5 @@ if run_button:
             ws = sheet.sheet1
             ws.clear()
             set_with_dataframe(ws, df)
-
-            checkbox_request = {
-                "requests": [{
-                    "repeatCell": {
-                        "range": {
-                            "sheetId": ws._properties['sheetId'],
-                            "startRowIndex": 1,
-                            "endRowIndex": len(df) + 1,
-                            "startColumnIndex": df.columns.get_loc("Status"),
-                            "endColumnIndex": df.columns.get_loc("Status") + 1
-                        },
-                        "cell": {
-                            "dataValidation": {
-                                "condition": {"type": "BOOLEAN"},
-                                "strict": True,
-                                "showCustomUi": True
-                            }
-                        },
-                        "fields": "dataValidation"
-                    }
-                }]
-            }
-
-            sheets_api.spreadsheets().batchUpdate(
-                spreadsheetId=sheet.id,
-                body=checkbox_request
-            ).execute()
 
             st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.id}")
