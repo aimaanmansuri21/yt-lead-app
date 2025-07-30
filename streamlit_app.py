@@ -91,6 +91,52 @@ with st.container():
             key="keyword_input_textbox",
             height=100
         )
+    with col2:
+        st.markdown("<div style='padding-top: 32px;'>", unsafe_allow_html=True)
+
+        preset_niches = [
+            "Tech Reviews", "Mobile App Tutorials", "Smartphone Comparisons", "Personal Finance", "Cryptocurrency & Blockchain",
+            "Real Estate Walkthroughs", "Fitness at Home", "Weight Loss Journeys", "Healthy Meal Prep", "Fashion for Men",
+            "Streetwear Styling", "Beauty Tutorials", "Skincare Routines", "Minimalist Living", "Home Decor Ideas",
+            "Interior Design", "DIY & Crafts", "Productivity Tips", "Study With Me / Pomodoro", "Self-Improvement",
+            "Motivation & Mindset", "Book Summaries", "Gaming Walkthroughs", "Live Gaming Commentary", "Esports News",
+            "Comedy Sketches", "Reaction Videos", "Try Not To Laugh Challenges", "Unboxing Videos", "Product Reviews",
+            "Parenting Tips", "Kids Educational Content", "Toy Reviews", "Educational Animations", "History Explained",
+            "Science Experiments", "True Crime Stories", "Storytelling with Animation", "Horror Short Films", "Vlogs",
+            "Travel Hacks & Destinations", "Van Life / Tiny Home", "Car Reviews", "Supercar Spotting", "Podcast Clips",
+            "Interview Highlights", "AI Tools & Automation", "Software Tutorials", "Small Business Marketing", "Freelancing & Side Hustles"
+        ]
+
+        if st.button("🎲", key="randomize_btn"):
+            try:
+                chosen_niche = random.choice(preset_niches)
+                prompt = f"""
+You are a YouTube SEO expert. Give me 5 realistic, high-search, and clickable YouTube keyword phrases that creators in the niche \"{chosen_niche}\" are using right now.
+
+Instructions:
+- The keywords must be things people would actually search for or use as video titles
+- Avoid made-up, vague, or overly generic terms
+- Prioritize high engagement and relevance
+
+Return the list in Python format like:
+["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+"""
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7
+                )
+                text = response.choices[0].message.content
+                keywords = ast.literal_eval(re.search(r"\[(.*?)\]", text, re.DOTALL).group(0))
+                st.session_state["keyword_input"] = ", ".join(keywords)
+                st.toast(f"🎯 Niche: {chosen_niche}")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to generate keywords: {e}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Lead Filtering UI ---
 col3, col4, col5 = st.columns(3)
@@ -137,9 +183,6 @@ if run_button:
         def extract_instagram(text):
             match = re.search(r"(https?://)?(www\.)?instagram\.com/([a-zA-Z0-9_.]+)", text)
             return f"https://instagram.com/{match.group(3)}" if match else "None"
-
-        def extract_emails(text):
-            return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text))
 
         def get_upload_date(channel_id):
             try:
@@ -206,7 +249,7 @@ if run_button:
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
-            # 🚀 NEW: Run Selenium + 2Captcha scraping
+            # 🚀 Run Selenium + 2Captcha scraping
             st.info("🔍 Running Selenium to fetch emails (limit 5 for testing)...")
             channel_urls = df["Channel URL"].tolist()
             email_map = scrape_youtube_emails(channel_urls, limit=5)
