@@ -3,6 +3,7 @@ import re
 import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -47,9 +48,11 @@ def scrape_youtube_emails(channel_urls, limit=5):
     chrome_options.add_argument("--disable-notifications")
     chrome_options.add_argument("--window-size=1920x1080")
 
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-    wait = WebDriverWait(driver, 10)
+    # Use Service to avoid TypeError in cloud
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
+    wait = WebDriverWait(driver, 10)
     results = {}
 
     for i, url in enumerate(channel_urls[:limit]):
