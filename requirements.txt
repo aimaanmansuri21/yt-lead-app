@@ -6,3 +6,6 @@ gspread
 gspread_dataframe
 oauth2client
 langdetect
+selenium
+webdriver-manager
+2captcha-python
