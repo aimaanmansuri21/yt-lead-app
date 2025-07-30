@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from twocaptcha import TwoCaptcha
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Load API key from Streamlit secrets
 CAPTCHA_API_KEY = st.secrets["CAPTCHA_API_KEY"]
@@ -38,12 +39,15 @@ def scrape_youtube_emails(channel_urls, limit=5):
     Returns a dict: {channel_url: email}
     """
 
-    # Set up Chrome options (visible browser for testing)
+    # Set up Chrome options for Streamlit Cloud (headless)
     chrome_options = Options()
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-notifications")
-    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--window-size=1920x1080")
 
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
     wait = WebDriverWait(driver, 10)
 
     results = {}
