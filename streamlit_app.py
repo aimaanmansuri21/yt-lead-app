@@ -1,3 +1,4 @@
+#cell 1
 import streamlit as st
 import pandas as pd
 import datetime
@@ -10,9 +11,6 @@ from openai import OpenAI
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 from googleapiclient.discovery import build
-
-# Import Selenium integration
-from selenium_integration import scrape_youtube_emails
 
 # --- OpenAI Client ---
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -46,7 +44,7 @@ Return traits in a Python list format, like: ["trait1", "trait2", "trait3", "tra
             raise ValueError(f"No valid traits found. Raw output: {traits_raw}")
         traits_cleaned = [trait.strip().capitalize() for trait in match if len(trait.strip()) > 1]
         return ", ".join(traits_cleaned[:5])
-    except Exception:
+    except Exception as e:
         return "Could not extract traits"
 
 # --- UI Styling ---
@@ -55,6 +53,7 @@ st.markdown("""
         html, body, [class*='css'] {
             background-color: #ffffff !important;
             color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         .stButton>button {
             background-color: #ff0000;
@@ -62,14 +61,31 @@ st.markdown("""
             padding: 0.75em 2em;
             font-size: 1rem;
             font-weight: 600;
+            border: none;
             border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
         }
         .stButton>button:hover {
             background-color: #cc0000;
         }
         .block-container {
             padding: 2rem 3rem;
+        }
+        .stNumberInput>div>input {
+            text-align: center;
+        }
+        label[for^='number_input_'] {
+            display: block;
+            text-align: center;
+            margin-top: 0.25rem;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -184,6 +200,9 @@ if run_button:
             match = re.search(r"(https?://)?(www\.)?instagram\.com/([a-zA-Z0-9_.]+)", text)
             return f"https://instagram.com/{match.group(3)}" if match else "None"
 
+        def extract_emails(text):
+            return ", ".join(re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text))
+
         def get_upload_date(channel_id):
             try:
                 uploads_playlist = youtube.channels().list(
@@ -225,14 +244,17 @@ if run_button:
 
                     desc = item['snippet']['description']
                     insta = extract_instagram(desc)
+                    emails = extract_emails(desc)
                     traits = extract_traits_from_bio(desc)
 
                     all_data.append({
                         "Channel Name": item["snippet"]["title"],
                         "Channel URL": f"https://youtube.com/channel/{item['id']}",
                         "Subscribers": subs,
+                        "Total Videos": item["statistics"].get("videoCount"),
+                        "Last Upload": last_upload.date(),
                         "Instagram": insta,
-                        "Email": "",  # Will be filled by Selenium
+                        "Email": emails,
                         "Traits": traits,
                         "Status": ""
                     })
@@ -249,13 +271,6 @@ if run_button:
             st.success(f"✅ Found {len(df)} leads")
             st.dataframe(df)
 
-            # 🚀 Run Selenium + 2Captcha scraping
-            st.info("🔍 Running Selenium to fetch emails (limit 5 for testing)...")
-            channel_urls = df["Channel URL"].tolist()
-            email_map = scrape_youtube_emails(channel_urls, limit=5)
-            df["Email"] = df["Channel URL"].map(email_map)
-            st.success("📧 Email scraping complete")
-
             try:
                 sheet = client_gs.open("YT Leads")
             except gspread.SpreadsheetNotFound:
@@ -265,5 +280,32 @@ if run_button:
             ws = sheet.sheet1
             ws.clear()
             set_with_dataframe(ws, df)
+
+            checkbox_request = {
+                "requests": [{
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": ws._properties['sheetId'],
+                            "startRowIndex": 1,
+                            "endRowIndex": len(df) + 1,
+                            "startColumnIndex": df.columns.get_loc("Status"),
+                            "endColumnIndex": df.columns.get_loc("Status") + 1
+                        },
+                        "cell": {
+                            "dataValidation": {
+                                "condition": {"type": "BOOLEAN"},
+                                "strict": True,
+                                "showCustomUi": True
+                            }
+                        },
+                        "fields": "dataValidation"
+                    }
+                }]
+            }
+
+            sheets_api.spreadsheets().batchUpdate(
+                spreadsheetId=sheet.id,
+                body=checkbox_request
+            ).execute()
 
             st.link_button("📤 Open Google Sheet", f"https://docs.google.com/spreadsheets/d/{sheet.id}")
